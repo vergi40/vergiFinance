@@ -89,6 +89,13 @@ namespace vergiFinance
             return message;
         }
 
+        public string ToDividendString(char fiatType = 'e')
+        {
+            var assetAmount = $"{AssetAmount:G8}";
+            var message = $"{TradeDate.Date:dd/MM/yyyy} {Ticker}: staking reward amount {assetAmount,-11}";
+            return message;
+        }
+
         public TransactionBase ShallowCopy()
         {
             return (TransactionBase) MemberwiseClone();

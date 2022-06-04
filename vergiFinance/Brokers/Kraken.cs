@@ -250,6 +250,19 @@ namespace vergiFinance.Brokers
             return messageBuilder.ToString();
         }
 
+        public string PrintStakingReport(int year)
+        {
+            var stakingRewards = Transactions.Where(t => t.Type == TransactionType.StakingDividend).ToList();
+
+            var message = new StringBuilder($"Staking events for year {year}:");
+            foreach (var reward in stakingRewards)
+            {
+                message.AppendLine($"{reward.ToDividendString()}");
+            }
+
+            return message.ToString();
+        }
+
         public List<int> TransactionYearSpan()
         {
             var years = GetBuySellTransactions().Select(t => t.TradeDate.Year).Distinct().ToList();

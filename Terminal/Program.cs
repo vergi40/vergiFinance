@@ -37,7 +37,7 @@ namespace Terminal
             // Add new (description,action) tuple to the end of list to add it for main loop
             var result = new List<(string description, Action action)>
             {
-                ("Read Kraken transactions", () =>
+                ("Read Kraken transactions. Print sales tax report", () =>
                 {
                     Write("Give input file path:");
                     var input = Read.ReadInput(false);
@@ -46,6 +46,17 @@ namespace Terminal
                     var events = General.ReadTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintExtendedTaxReport(year);
+                    Write(report);
+                }),
+                ("Read Kraken transactions. Print staking tax report", () =>
+                {
+                    Write("Give input file path:");
+                    var input = Read.ReadInput(false);
+                    var file = FileFactory.Create(input.InputAsString);
+
+                    var events = General.ReadTransactions(file.Lines);
+                    var year = PrintYearRangeAndAskInput(events);
+                    var report = events.PrintStakingReport(year);
                     Write(report);
                 })
             };
