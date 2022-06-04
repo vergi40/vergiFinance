@@ -1,7 +1,7 @@
 ﻿using System.IO.Compression;
-using Terminal.Common.IFileInterface;
+using vergiCommon.IFileInterface;
 
-namespace Terminal.Common.Read
+namespace vergiCommon.File
 {
     public class ReadUtils
     {
@@ -11,6 +11,7 @@ namespace Terminal.Common.Read
             {
                 var entry = archive.GetEntry(fileName);
 
+                // TODO read all files/extensions and select best
                 return FileFactory.Create(entry.Open(), "csv");
             }
         }

@@ -1,4 +1,5 @@
-﻿using Terminal.Common.IFileInterface;
+﻿using vergiCommon.IFileInterface;
+using vergiCommon.Input;
 using vergiFinance;
 
 namespace Terminal
@@ -7,7 +8,7 @@ namespace Terminal
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Select utility:");
+            Write("Select utility:");
 
             var utils = InitializeBaseUtilities();
 
@@ -16,37 +17,66 @@ namespace Terminal
             {
                 validInputs.Add(Convert.ToString(i+1));
                 var util = utils[i];
-                Console.WriteLine($"  {i+1}): {util.description}");
+                Write($"  {i+1}): {util.description}");
             }
 
-            var input = Console.ReadKey().KeyChar.ToString();
-            Console.WriteLine();
-            if (validInputs.Contains(input))
+            Write();
+            var input = Read.ReadInput(true);
+            if (validInputs.Contains(input.InputAsString))
             {
-                utils[Convert.ToInt32(input) - 1].action();
+                utils[Convert.ToInt32(input.InputAsString) - 1].action();
             }
 
-            Console.WriteLine("Exit by pressing any key...");
+            Write("Exit by pressing any key...");
             Console.ReadKey();
         }
 
         static List<(string description, Action action)> InitializeBaseUtilities()
         {
+            // Simple "parameter" list which is used to build output for user
+            // Add new (description,action) tuple to the end of list to add it for main loop
             var result = new List<(string description, Action action)>
             {
                 ("Read Kraken transactions", () =>
                 {
-                    Console.WriteLine("Give input file path:");
-                    var filePath = Console.ReadLine();
-                    var file = FileFactory.Create(filePath);
+                    Write("Give input file path:");
+                    var input = Read.ReadInput(false);
+                    var file = FileFactory.Create(input.InputAsString);
 
                     var events = General.ReadTransactions(file.Lines);
-                    var report = events.PrintExtendedTaxReport(2021);
-                    Console.WriteLine(report);
+                    var year = PrintYearRangeAndAskInput(events);
+                    var report = events.PrintExtendedTaxReport(year);
+                    Write(report);
                 })
             };
 
             return result;
         }
+
+        private static int PrintYearRangeAndAskInput(IEventLog log)
+        {
+            Write("Select taxation target year:");
+
+            var years = log.TransactionYearSpan();
+            foreach (var year in years)
+            {
+                Write($"  {year}");
+            }
+
+            Write("");
+            var input = Read.ReadInput(false);
+            var inputAsInt = Convert.ToInt32(input.InputAsString);
+
+            if (years.Contains(inputAsInt))
+            {
+                return inputAsInt;
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid input: {input.InputAsString}");
+            }
+        }
+
+        private static void Write(string message = "") => Console.WriteLine(message);
     }
 }

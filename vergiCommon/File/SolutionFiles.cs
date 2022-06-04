@@ -1,4 +1,4 @@
-﻿namespace Terminal.Common.Read
+﻿namespace vergiCommon.File
 {
     public class SolutionFiles
     {
@@ -22,7 +22,7 @@
         public static string GetFullText(string fileName)
         {
             var filePath = GetFullPath(fileName);
-            var text = File.ReadAllText(filePath);
+            var text = System.IO.File.ReadAllText(filePath);
             return text;
         }
     }
@@ -49,7 +49,7 @@
         public static string GetFullText(string fileName)
         {
             var filePath = GetFullPath(fileName);
-            var text = File.ReadAllText(filePath);
+            var text = System.IO.File.ReadAllText(filePath);
             return text;
         }
     }

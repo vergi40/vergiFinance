@@ -1,4 +1,4 @@
-﻿namespace Terminal.Common.IFileInterface
+﻿namespace vergiCommon.IFileInterface
 {
     public class FileFactory
     {
@@ -7,7 +7,7 @@
             // TODO open zip files
 
 
-            var data = File.ReadAllLines(filePath);
+            var data = System.IO.File.ReadAllLines(filePath);
 
             // If text file
             var file = new TextFile(filePath, data);

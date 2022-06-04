@@ -1,4 +1,4 @@
-﻿namespace Terminal.Common
+﻿namespace vergiCommon
 {
     public class Constants
     {

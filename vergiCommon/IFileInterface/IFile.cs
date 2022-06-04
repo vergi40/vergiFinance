@@ -1,4 +1,4 @@
-﻿namespace Terminal.Common.IFileInterface
+﻿namespace vergiCommon.IFileInterface
 {
     public interface IFile
     {

@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\vergiCommon\vergiCommon.csproj" />
     <ProjectReference Include="..\vergiFinance\vergiFinance.csproj" />
   </ItemGroup>
 
