@@ -253,8 +253,11 @@ namespace vergiFinance.Brokers
         public string PrintStakingReport(int year)
         {
             var stakingRewards = Transactions.Where(t => t.Type == TransactionType.StakingDividend).ToList();
+            var priceFetcher = new PriceFetcher();
+            priceFetcher.FillDayUnitPrice(stakingRewards).Wait();
 
-            var message = new StringBuilder($"Staking events for year {year}:");
+            var message = new StringBuilder();
+            message.AppendLine($"Staking events for year {year}:");
             foreach (var reward in stakingRewards)
             {
                 message.AppendLine($"{reward.ToDividendString()}");
