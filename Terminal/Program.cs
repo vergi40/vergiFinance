@@ -1,4 +1,5 @@
-﻿using vergiCommon.IFileInterface;
+﻿using vergiCommon;
+using vergiCommon.IFileInterface;
 using vergiCommon.Input;
 using vergiFinance;
 
@@ -58,7 +59,17 @@ namespace Terminal
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintStakingReport(year);
                     Write(report);
-                })
+                }),
+                ("Staking test", () =>
+                {
+                    Write("Analyzing 2021 ledger staking rewards...");
+                    var path = Path.Combine(Constants.MyDocumentsTempLocation, "ledgers-2021.csv");
+                    var file = FileFactory.Create(path);
+
+                    var events = General.ReadTransactions(file.Lines);
+                    var report = events.PrintStakingReport(2021);
+                    Write(report);
+                }),
             };
 
             return result;

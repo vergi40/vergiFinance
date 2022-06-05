@@ -12,8 +12,4 @@
     <ProjectReference Include="..\vergiFinance\vergiFinance.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Common\" />
-  </ItemGroup>
-
 </Project>
