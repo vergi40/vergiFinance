@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Globalization;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace vergiFinance
@@ -20,6 +21,7 @@ namespace vergiFinance
         };
 
         private HttpClient _client { get; } = new HttpClient();
+        private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
 
         public async Task FillDayUnitPrice(List<TransactionBase> stakingRewards)
         {
@@ -33,6 +35,29 @@ namespace vergiFinance
             string responseBody = await response.Content.ReadAsStringAsync();
             
 
+        }
+
+        public async Task<decimal> GetCoinPriceWithDate(string ticker, DateTime date)
+        {
+            var id = TickerToId[ticker];
+
+            // https://api.coingecko.com/api/v3/coins/ethereum/history
+            var req = _urlBase + $"coins/{id}/history?date={date.Day}-{date.Month}-{date.Year}";
+
+            var response = await _client.GetAsync(req);
+            response.EnsureSuccessStatusCode();
+            return DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
+        }
+
+        public decimal DeserializeCoinMarketData(string jsonString)
+        {
+            // https://www.newtonsoft.com/json/help/html/SerializingJSONFragments.htm
+            var jObject = JObject.Parse(jsonString);
+
+            var marketData = jObject["market_data"];
+            var eurString = marketData["current_price"]["eur"].ToString();
+            // Gives decimal as 120,11
+            return Convert.ToDecimal(eurString, new CultureInfo("fi-FI"));
         }
 
         public static List<CoinId> DeserializeCoinList(string jsonString)
