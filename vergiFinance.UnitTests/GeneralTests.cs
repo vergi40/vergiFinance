@@ -1,3 +1,4 @@
+using System.Globalization;
 using vergiCommon;
 
 namespace vergiFinance.UnitTests
@@ -24,6 +25,7 @@ namespace vergiFinance.UnitTests
         [Test]
         public void DeserializeCoinMarketDatason()
         {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             var jsonFilePath = Path.Combine(Constants.MyDocumentsTempLocation, "coinhistory.json");
             var jsonString = File.ReadAllText(jsonFilePath);
 

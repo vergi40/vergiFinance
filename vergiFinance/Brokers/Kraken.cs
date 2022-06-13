@@ -260,8 +260,12 @@ namespace vergiFinance.Brokers
             message.AppendLine($"Staking events for year {year}:");
             foreach (var reward in stakingRewards)
             {
-                message.AppendLine($"{reward.ToDividendString()}");
+                message.AppendLine($"  {reward.ToDividendString()}");
             }
+
+            message.AppendLine("-----");
+            message.AppendLine($"Total staking rewards: {stakingRewards.Sum(r => r.DayUnitPrice * r.AssetAmount):F2}e");
+            message.AppendLine("-----");
 
             return message.ToString();
         }

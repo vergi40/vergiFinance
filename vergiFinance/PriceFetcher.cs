@@ -25,24 +25,22 @@ namespace vergiFinance
 
         public async Task FillDayUnitPrice(List<TransactionBase> stakingRewards)
         {
-            var urlBase = "https://api.coingecko.com/api/v3/";
-            var coinReq = "coins/";
+            foreach (var transaction in stakingRewards)
+            {
+                Console.WriteLine($"Fetching price for {transaction.Ticker} at {transaction.TradeDate}...");
+                var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
+                transaction.DayUnitPrice = priceAtDate;
 
-            var coinList = "https://api.coingecko.com/api/v3/coins/list";
-
-            var response = await _client.GetAsync(coinList);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            
-
+                Console.WriteLine($"Success: {priceAtDate:G6}e");
+            }
         }
 
-        public async Task<decimal> GetCoinPriceWithDate(string ticker, DateTime date)
+        public async Task<decimal> GetCoinPriceForDate(string ticker, DateTime date)
         {
             var id = TickerToId[ticker];
 
             // https://api.coingecko.com/api/v3/coins/ethereum/history
-            var req = _urlBase + $"coins/{id}/history?date={date.Day}-{date.Month}-{date.Year}";
+            var req = _urlBase + $"coins/{id}/history?date={date.Date:dd-MM-yyyy}";
 
             var response = await _client.GetAsync(req);
             response.EnsureSuccessStatusCode();
@@ -57,7 +55,7 @@ namespace vergiFinance
             var marketData = jObject["market_data"];
             var eurString = marketData["current_price"]["eur"].ToString();
             // Gives decimal as 120,11
-            return Convert.ToDecimal(eurString, new CultureInfo("fi-FI"));
+            return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
         }
 
         public static List<CoinId> DeserializeCoinList(string jsonString)
