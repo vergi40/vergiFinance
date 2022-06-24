@@ -17,8 +17,22 @@ namespace vergiFinance
     {
         List<TransactionBase> Transactions { get; set; }
 
-
+        /// <summary>
+        /// List all transactions. Print all sale events for given year. Give
+        /// details individually for sales with profit and loss.
+        /// </summary>
+        /// <param name="year"></param>
+        /// <returns></returns>
         string PrintExtendedTaxReport(int year);
+
+        /// <summary>
+        /// List all staking events. Fetch current value for each stake reward
+        /// and print total profit.
+        /// </summary>
+        /// <param name="year"></param>
+        /// <returns></returns>
+        string PrintStakingReport(int year);
+
         List<int> TransactionYearSpan();
     }
     

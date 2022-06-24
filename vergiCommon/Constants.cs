@@ -7,5 +7,8 @@
 
         public static string DatabaseFileLocation => throw new NotImplementedException();
 
+        public static string MyDocumentsTempLocation =>
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TempFinance");
+
     }
 }
