@@ -30,7 +30,7 @@ namespace vergiFinance.UnitTests
         {
             var dto = new StakingDto()
             {
-                DayUnitPrice = 666, Id = "test", Ticker = "test", TradeDate = new DateTime(2020, 1, 1)
+                DayUnitPrice = 666, BrokerId = "test", Ticker = "test", TradeDate = new DateTime(2020, 1, 1)
             };
 
             _dbInstance.SaveSingleStakingData(dto);

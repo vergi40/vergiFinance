@@ -8,11 +8,13 @@ namespace vergiFinance.Persistence
 {
     public class StakingDto
     {
+        //public Guid Id { get; set; } = Guid.NewGuid();
+
         /// <summary>
         /// Nordnet: Nro
         /// Kraken: Id
         /// </summary>
-        public string Id { get; set; } = "";
+        public string BrokerId { get; set; } = "";
 
         /// <summary>
         /// NOK, NVDA, ETH, 

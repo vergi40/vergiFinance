@@ -22,12 +22,12 @@ namespace vergiFinance.Persistence
             using (var db = new LiteDatabase(_dbName))
             {
                 var collection = db.GetCollection<StakingDto>("staking");
-
+                
                 var results = collection.Query()
                     .Where(x => x.Ticker == ticker && x.TradeDate.Date.Equals(tradeDate.Date))
                     .ToList();
 
-                if (results == null) return false;
+                if (results == null || results.Count == 0) return false;
                 if (results.Count > 1)
                 {
                     throw new ArgumentException($"More than one entry found for [{ticker}, {tradeDate.Date}]");
@@ -38,13 +38,23 @@ namespace vergiFinance.Persistence
             }
         }
 
+        public bool TryLoadStakingData(List<(string ticker, DateTime tradeDate)> pars, out StakingDto data)
+        {
+            throw new NotImplementedException();
+        }
+
         public void SaveSingleStakingData(StakingDto dto)
         {
             using (var db = new LiteDatabase(_dbName))
             {
                 var collection = db.GetCollection<StakingDto>("staking");
-                collection.Insert(dto);
+                collection.Upsert(dto);
             }
+        }
+
+        public void SaveStakingData(List<StakingDto> dtos)
+        {
+            throw new NotImplementedException();
         }
 
         public void ClearCollection(string collectionName = "staking")

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using vergiFinance.Persistence;
 
 namespace vergiFinance
 {
@@ -22,16 +23,37 @@ namespace vergiFinance
 
         private HttpClient _client { get; } = new HttpClient();
         private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
+        private readonly Persistence.Persistence _stakingPersistence;
 
+        public PriceFetcher()
+        {
+            _stakingPersistence = new Persistence.Persistence();
+        }
+
+        /// <summary>
+        /// NOTE: Not good design to update one property in mutable items. But for PoC it'll do
+        /// </summary>
+        /// <param name="stakingRewards"></param>
+        /// <returns></returns>
         public async Task FillDayUnitPrice(List<TransactionBase> stakingRewards)
         {
             foreach (var transaction in stakingRewards)
             {
                 Console.WriteLine($"Fetching price for {transaction.Ticker} at {transaction.TradeDate}...");
+
+                if (_stakingPersistence.TryLoadSingleStakingData(transaction.Ticker, transaction.TradeDate,
+                        out var dto))
+                {
+                    transaction.DayUnitPrice = dto.DayUnitPrice;
+
+                    Console.WriteLine($"Success [from db]: {dto.DayUnitPrice:G6}e");
+                    continue;
+                }
+                
                 var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
                 transaction.DayUnitPrice = priceAtDate;
 
-                Console.WriteLine($"Success: {priceAtDate:G6}e");
+                Console.WriteLine($"Success [from http api]: {priceAtDate:G6}e");
             }
         }
 
@@ -78,6 +100,21 @@ namespace vergiFinance
             return result;
         }
 
+        public void SaveUnitPrices(IEnumerable<TransactionBase> stakingRewards)
+        {
+            foreach (var transaction in stakingRewards)
+            {
+                var dto = new StakingDto()
+                {
+                    DayUnitPrice = transaction.DayUnitPrice,
+                    BrokerId = transaction.Id,
+                    Ticker = transaction.Ticker,
+                    TradeDate = transaction.TradeDate
+                };
+
+                _stakingPersistence.SaveSingleStakingData(dto);
+            }
+        }
     }
 
     public record CoinId (string id, string symbol, string name);
