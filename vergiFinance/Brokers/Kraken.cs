@@ -256,6 +256,9 @@ namespace vergiFinance.Brokers
             var priceFetcher = new PriceFetcher();
             priceFetcher.FillDayUnitPrice(stakingRewards).Wait();
 
+            // Each transaction object now filled with proper day unit price
+            priceFetcher.SaveUnitPrices(stakingRewards);
+
             var message = new StringBuilder();
             message.AppendLine($"Staking events for year {year}:");
             foreach (var reward in stakingRewards)
