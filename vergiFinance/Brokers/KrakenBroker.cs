@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
 using vergiFinance.Brokers.Kraken;
+using vergiFinance.Persistence;
 
 namespace vergiFinance.Brokers
 {

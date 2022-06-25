@@ -27,7 +27,7 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
         public PriceFetcher()
         {
-            _stakingPersistence = new Persistence.Persistence();
+            _stakingPersistence = new Persistence.Persistence(new DatabaseLite());
         }
 
         /// <summary>
