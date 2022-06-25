@@ -74,6 +74,11 @@ namespace vergiFinance
         [Obsolete("Not implemented")]
         public DateTime PaymentDate { get; set; }
 
+        /// <summary>
+        /// Ticker unit price in midday of <see cref="TradeDate"/>
+        /// </summary>
+        public decimal DayUnitPrice { get; set; }
+
         public override string ToString()
         {
             return $"{Type.ToString()}: {Ticker} -> {TotalPrice:F2} {FiatCurrency}";
@@ -86,6 +91,17 @@ namespace vergiFinance
             var assetUnitPrice = $"{AssetUnitPrice:F2}";
             if (AssetUnitPrice < 1) assetUnitPrice = $"{AssetUnitPrice:F4}";
             var message = $"{TradeDate.Date:dd/MM/yyyy} {Type.ToString(),-5}{totalPrice,-10} amount {assetAmount,-11} unit price {assetUnitPrice}{fiatType}";
+            return message;
+        }
+
+        public string ToDividendString(char fiatType = 'e')
+        {
+            var assetAmount = $"{AssetAmount:G8}";
+            var ticker = $"{Ticker}:";
+            var rewardAmountText = $"reward amount {assetAmount}";
+            var unitPrice = $"{DayUnitPrice:G8}";
+            var priceText = $"midday price {unitPrice}";
+            var message = $"{TradeDate.Date:dd/MM/yyyy} {ticker,-8} {rewardAmountText,-30} {priceText}";
             return message;
         }
 
