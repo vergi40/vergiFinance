@@ -1,5 +1,5 @@
 ﻿using System;
-using vergiFinance.Brokers;
+using vergiFinance.Brokers.Kraken;
 
 namespace vergiFinance
 {

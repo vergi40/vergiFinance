@@ -1,5 +1,6 @@
 using System.Globalization;
 using vergiCommon;
+using vergiFinance.Brokers.Kraken.Operations;
 
 namespace vergiFinance.UnitTests
 {

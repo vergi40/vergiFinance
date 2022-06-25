@@ -44,7 +44,7 @@ namespace Terminal
                     var input = Read.ReadInput(false);
                     var file = FileFactory.Create(input.InputAsString);
 
-                    var events = General.ReadTransactions(file.Lines);
+                    var events = General.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintExtendedTaxReport(year);
                     Write(report);
@@ -55,7 +55,7 @@ namespace Terminal
                     var input = Read.ReadInput(false);
                     var file = FileFactory.Create(input.InputAsString);
 
-                    var events = General.ReadTransactions(file.Lines);
+                    var events = General.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintStakingReport(year);
                     Write(report);
@@ -66,7 +66,7 @@ namespace Terminal
                     var path = Path.Combine(Constants.MyDocumentsTempLocation, "ledgers-2021.csv");
                     var file = FileFactory.Create(path);
 
-                    var events = General.ReadTransactions(file.Lines);
+                    var events = General.ReadKrakenTransactions(file.Lines);
                     var report = events.PrintStakingReport(2021);
                     Write(report);
                 }),

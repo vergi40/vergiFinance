@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using vergiFinance.Persistence;
 
-namespace vergiFinance
+namespace vergiFinance.Brokers.Kraken.Operations
 {
     public class PriceFetcher
     {
@@ -49,7 +49,7 @@ namespace vergiFinance
                     Console.WriteLine($"Success [from db]: {dto.DayUnitPrice:G6}e");
                     continue;
                 }
-                
+
                 var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
                 transaction.DayUnitPrice = priceAtDate;
 
@@ -117,6 +117,6 @@ namespace vergiFinance
         }
     }
 
-    public record CoinId (string id, string symbol, string name);
+    public record CoinId(string id, string symbol, string name);
 
 }

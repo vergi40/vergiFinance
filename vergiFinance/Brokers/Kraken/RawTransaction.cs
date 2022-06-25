@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace vergiFinance.Brokers;
+namespace vergiFinance.Brokers.Kraken;
 
 /// <summary>
 /// Lists each property that can be read from kraken csv ledger print.

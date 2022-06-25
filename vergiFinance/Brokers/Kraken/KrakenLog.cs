@@ -1,7 +1,8 @@
 ﻿using System.Globalization;
 using System.Text;
+using vergiFinance.Brokers.Kraken.Operations;
 
-namespace vergiFinance.Brokers;
+namespace vergiFinance.Brokers.Kraken;
 
 /// <summary>
 /// Parsed log that supports various operations
@@ -10,7 +11,7 @@ class KrakenLog : IEventLog
 {
     private const string Separator = "   ";
     public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
-        
+
     private IEnumerable<TransactionBase> GetBuySellTransactions() => Transactions
         .Where(t => t.Type is TransactionType.Buy or TransactionType.Sell);
 
@@ -34,7 +35,7 @@ class KrakenLog : IEventLog
                 Transactions.Add(TransactionFactory.Create(TransactionType.StakingOperation, FiatCurrency.Eur, singleEvent.Asset,
                     Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
             }
-            else if(singleEvent.TypeAsString == "deposit")
+            else if (singleEvent.TypeAsString == "deposit")
             {
                 Transactions.Add(TransactionFactory.Create(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
                     Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
@@ -77,7 +78,7 @@ class KrakenLog : IEventLog
         }
     }
 
-    private (List<RawTransaction> singles, List<(RawTransaction,RawTransaction)> pairs) CombineTransactions(
+    private (List<RawTransaction> singles, List<(RawTransaction, RawTransaction)> pairs) CombineTransactions(
         List<RawTransaction> transactions)
     {
         var dict = new Dictionary<string, List<RawTransaction>>();
@@ -89,7 +90,7 @@ class KrakenLog : IEventLog
             }
             else
             {
-                dict.Add(transaction.ReferenceId, new List<RawTransaction>{transaction});
+                dict.Add(transaction.ReferenceId, new List<RawTransaction> { transaction });
             }
         }
 
@@ -131,7 +132,7 @@ class KrakenLog : IEventLog
 
         // <ticker, transactions report>
         var transactionReport = new Dictionary<string, string>();
-            
+
         foreach (var entry in dict)
         {
             var eventsBuilder = new StringBuilder();
@@ -169,7 +170,7 @@ class KrakenLog : IEventLog
             messageBuilder.AppendLine($"Sales profit report");
             var salesCalculator = new SalesCalculator(dict[ticker], year);
             var profitSales = salesCalculator.PrintProfitSales().ToList();
-            if(profitSales.Any())
+            if (profitSales.Any())
             {
                 foreach (var sale in profitSales)
                 {
@@ -181,10 +182,10 @@ class KrakenLog : IEventLog
                 messageBuilder.AppendLine($"{Separator}Total profit sales: {profit:F2}{fiat}");
                 messageBuilder.AppendLine();
             }
-                
+
             messageBuilder.AppendLine($"Sales loss report");
             var lossSales = salesCalculator.PrintLossSales().ToList();
-            if(lossSales.Any())
+            if (lossSales.Any())
             {
                 foreach (var sale in lossSales)
                 {

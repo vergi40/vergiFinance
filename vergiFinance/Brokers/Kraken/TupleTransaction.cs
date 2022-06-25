@@ -1,4 +1,4 @@
-﻿namespace vergiFinance.Brokers;
+﻿namespace vergiFinance.Brokers.Kraken;
 
 /// <summary>
 /// Represents complete transactions parsed from 1 or 2 <see cref="RawTransaction"/>
@@ -13,7 +13,7 @@ internal class TupleTransaction
 
     public TupleTransaction(RawTransaction transaction1, RawTransaction transaction2)
     {
-        var list = new List<RawTransaction> {transaction1, transaction2};
+        var list = new List<RawTransaction> { transaction1, transaction2 };
         foreach (var transaction in list)
         {
             var type = transaction.TypeAsString;
