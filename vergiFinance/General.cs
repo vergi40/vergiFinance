@@ -9,7 +9,7 @@ namespace vergiFinance
         public static IEventLog ReadTransactions(IReadOnlyList<string> lines)
         {
             // TODO IoC binding
-            IBrokerService broker = new Kraken();
+            IBrokerService broker = new KrakenBroker();
 
             return broker.ReadTransactions(lines);
         }

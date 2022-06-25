@@ -63,9 +63,9 @@ namespace vergiFinance
         /// <param name="trade1"></param>
         /// <param name="trade2"></param>
         /// <returns></returns>
-        public static TransactionBase CreateKrakenTrade(TransactionsContent trade1, TransactionsContent trade2)
+        public static TransactionBase CreateKrakenTrade(RawTransaction trade1, RawTransaction trade2)
         {
-            (TransactionsContent fiat, TransactionsContent crypto) = (trade1, trade2);
+            (RawTransaction fiat, RawTransaction crypto) = (trade1, trade2);
             if (trade2.Asset.Contains("EUR")) (fiat, crypto) = (trade2, trade1);
 
             var type = TransactionType.Buy;
@@ -95,7 +95,7 @@ namespace vergiFinance
             return transaction;
         }
 
-        public static TransactionBase CreateStakingTransfer(TransactionType transferType, TransactionsContent item1, TransactionsContent item2)
+        public static TransactionBase CreateStakingTransfer(TransactionType transferType, RawTransaction item1, RawTransaction item2)
         {
             // "",						"BUOCI3H-OT5F7V-CMBJ7A","2021-07-20 10:22:11","withdrawal","","currency","XETH",-0.3000000000,0.0000000000,""
             // "",						"RUNDM24-Q3U73U-UPTDYL","2021-07-20 10:25:39","deposit","","currency","ETH2.S",0.3000000000,0.0000000000,""
