@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace vergiFinance
+namespace vergiFinance.Brokers.Kraken.Operations
 {
     public class SalesCalculator
     {
@@ -98,7 +98,7 @@ namespace vergiFinance
 
             return result;
         }
-        
+
         public IEnumerable<string> PrintProfitSales()
         {
             foreach (var singleSale in _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year))
@@ -172,7 +172,7 @@ namespace vergiFinance
             var lossList = _allSales.Where(s => s.Type == SalesType.Loss).ToList();
             var lossPurchases = lossList.Sum(s => s.BoughtTotalPrice);
             var lossSales = lossList.Sum(s => s.SoldTotalPrice);
-            
+
             var profitList = _allSales.Where(s => s.Type == SalesType.Profit).ToList();
             var profitPurchases = profitList.Sum(s => s.BoughtTotalPrice);
             var profitSales = profitList.Sum(s => s.SoldTotalPrice);
@@ -184,7 +184,7 @@ namespace vergiFinance
     public record TotalPurchasesAndSales(decimal lossPurchases, decimal lossSales, decimal profitPurchases,
         decimal profitSales);
 
-    public enum SalesType{Profit, Loss}
+    public enum SalesType { Profit, Loss }
 
     /// <summary>
     /// Contains full or partial transaction focusing on selling unit price
@@ -224,7 +224,7 @@ namespace vergiFinance
         public decimal BoughtTotalPrice => AssetAmount * OriginalUnitPrice;
 
         public decimal ProfitLoss { get; set; }
-        
+
         public SalesUnitInformation(decimal soldUnitPrice, decimal originalUnitPrice, decimal assetAmount, TransactionBase originalFullTransaction)
         {
             _originalFullTransaction = originalFullTransaction;

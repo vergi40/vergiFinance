@@ -84,7 +84,7 @@ namespace vergiFinance
             return $"{Type.ToString()}: {Ticker} -> {TotalPrice:F2} {FiatCurrency}";
         }
 
-        public string ToTransactionString(char fiatType = 'e')
+        public string ToKrakenTransactionString(char fiatType = 'e')
         {
             var totalPrice = $"{TotalPrice:F2}{fiatType}";
             var assetAmount = $"{AssetAmount:G8}";
@@ -94,7 +94,7 @@ namespace vergiFinance
             return message;
         }
 
-        public string ToDividendString(char fiatType = 'e')
+        public string ToKrakenDividendString(char fiatType = 'e')
         {
             var assetAmount = $"{AssetAmount:G8}";
             var ticker = $"{Ticker}:";

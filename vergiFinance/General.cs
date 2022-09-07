@@ -6,10 +6,10 @@ namespace vergiFinance
 
     public static class General
     {
-        public static IEventLog ReadTransactions(IReadOnlyList<string> lines)
+        public static IEventLog ReadKrakenTransactions(IReadOnlyList<string> lines)
         {
             // TODO IoC binding
-            IBrokerService broker = new Kraken();
+            IBrokerService broker = new KrakenBroker();
 
             return broker.ReadTransactions(lines);
         }

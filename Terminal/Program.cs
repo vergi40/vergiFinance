@@ -11,6 +11,7 @@ namespace Terminal
         {
             Write("Select utility:");
 
+            // Handy way for simple choice-based console to simultaneously list choices and call their delegated functions 
             var utils = InitializeBaseUtilities();
 
             var validInputs = new List<string>();
@@ -27,6 +28,10 @@ namespace Terminal
             {
                 utils[Convert.ToInt32(input.InputAsString) - 1].action();
             }
+            else
+            {
+                Write($"Incorrect selection [{input.InputAsString}]");
+            }
 
             Write("Exit by pressing any key...");
             Console.ReadKey();
@@ -40,22 +45,22 @@ namespace Terminal
             {
                 ("Read Kraken transactions. Print sales tax report", () =>
                 {
-                    Write("Give input file path:");
+                    Write("Give input file path (full path without \"\"):");
                     var input = Read.ReadInput(false);
                     var file = FileFactory.Create(input.InputAsString);
 
-                    var events = General.ReadTransactions(file.Lines);
+                    var events = General.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintExtendedTaxReport(year);
                     Write(report);
                 }),
                 ("Read Kraken transactions. Print staking tax report", () =>
                 {
-                    Write("Give input file path:");
+                    Write("Give input file path (full path without \"\"):");
                     var input = Read.ReadInput(false);
                     var file = FileFactory.Create(input.InputAsString);
 
-                    var events = General.ReadTransactions(file.Lines);
+                    var events = General.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintStakingReport(year);
                     Write(report);
@@ -66,7 +71,7 @@ namespace Terminal
                     var path = Path.Combine(Constants.MyDocumentsTempLocation, "ledgers-2021.csv");
                     var file = FileFactory.Create(path);
 
-                    var events = General.ReadTransactions(file.Lines);
+                    var events = General.ReadKrakenTransactions(file.Lines);
                     var report = events.PrintStakingReport(2021);
                     Write(report);
                 }),

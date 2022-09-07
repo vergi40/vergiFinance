@@ -16,13 +16,13 @@ namespace vergiFinance.UnitTests
         [SetUp]
         public void Setup()
         {
-            _dbInstance = new Persistence.Persistence("test.db");
+            _dbInstance = new Persistence.Persistence(new DatabaseLite("test.db"));
         }
 
         [TearDown]
         public void Cleanup()
         {
-            _dbInstance.ClearCollection();
+            _dbInstance.ClearTable();
         }
 
         [Test]
