@@ -1,17 +1,56 @@
-﻿namespace vergiCommon.IFileInterface
+﻿using System.Net.Mime;
+using FileTypeChecker;
+using vergiCommon.File;
+
+namespace vergiCommon.IFileInterface
 {
     public class FileFactory
     {
-        public static IFile Create(string filePath)
+        public static IFile Create(string filePath, bool trustFileExtension = true)
         {
-            // TODO open zip files
+            if (!trustFileExtension)
+            {
+                // https://github.com/AJMitev/FileTypeChecker
+                // Throws if unrecognizable
+                IsFileRecognizable(filePath);
+            }
 
+            // Compare extension to known types
+            var validator = new ExtensionValidator();
+            if (validator.IsTextFile(filePath))
+            {
+                var data = System.IO.File.ReadAllLines(filePath);
 
-            var data = System.IO.File.ReadAllLines(filePath);
+                // If text file
+                return new TextFile(filePath, data);
+            }
 
-            // If text file
-            var file = new TextFile(filePath, data);
-            return file;
+            if (validator.IsZipFile(filePath))
+            {
+                return ReadUtils.ReadFirstFromZipFile(filePath);
+            }
+
+            throw new NotImplementedException("File type reading not implemented yet");
+        }
+
+        private static bool IsFileRecognizable(string filePath)
+        {
+            using (var fileStream = System.IO.File.OpenRead(filePath))
+            {
+                var isRecognizable = FileTypeValidator.IsTypeRecognizable(fileStream);
+                if (!isRecognizable)
+                {
+                    // 
+                    throw new ArgumentException($"Unknown file content in path: ${filePath}");
+                }
+
+                if (FileTypeValidator.IsImage(fileStream))
+                {
+                    throw new ArgumentException("Image types not supported");
+                }
+
+                return true;
+            }
         }
 
         public static IFile Create(Stream stream, string extension)
@@ -28,6 +67,30 @@
             // If text file
             var file = new TextFile(extension, lines);
             return file;
+        }
+    }
+
+    class ExtensionValidator
+    {
+        private HashSet<string> TextExtensions => new HashSet<string>
+        {
+            ".txt", ".csv", ".md", ".json", ".xml"
+        };
+
+        public bool IsTextFile(string filePath)
+        {
+            var extension = Path.GetExtension(filePath);
+            if (string.IsNullOrEmpty(extension)) return false;
+
+            return TextExtensions.Contains(extension);
+        }
+
+        public bool IsZipFile(string filePath)
+        {
+            var extension = Path.GetExtension(filePath);
+            if (string.IsNullOrEmpty(extension)) return false;
+
+            return extension.Equals(".zip");
         }
     }
 }

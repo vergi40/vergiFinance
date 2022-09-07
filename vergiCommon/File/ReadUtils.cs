@@ -10,9 +10,19 @@ namespace vergiCommon.File
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
             {
                 var entry = archive.GetEntry(fileName);
-
-                // TODO read all files/extensions and select best
                 return FileFactory.Create(entry.Open(), "csv");
+            }
+        }
+
+        public static IFile ReadFirstFromZipFile(string zipPath)
+        {
+            using (ZipArchive archive = ZipFile.OpenRead(zipPath))
+            {
+                var entry = archive.Entries.FirstOrDefault();
+                var extension = Path.GetExtension(entry.FullName);
+                extension = extension.Replace(".", "");
+
+                return FileFactory.Create(entry.Open(), extension);
             }
         }
     }
