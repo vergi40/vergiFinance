@@ -11,6 +11,7 @@ namespace Terminal
         {
             Write("Select utility:");
 
+            // Handy way for simple choice-based console to simultaneously list choices and call their delegated functions 
             var utils = InitializeBaseUtilities();
 
             var validInputs = new List<string>();
@@ -27,6 +28,10 @@ namespace Terminal
             {
                 utils[Convert.ToInt32(input.InputAsString) - 1].action();
             }
+            else
+            {
+                Write($"Incorrect selection [{input.InputAsString}]");
+            }
 
             Write("Exit by pressing any key...");
             Console.ReadKey();
@@ -40,7 +45,7 @@ namespace Terminal
             {
                 ("Read Kraken transactions. Print sales tax report", () =>
                 {
-                    Write("Give input file path:");
+                    Write("Give input file path (full path without \"\"):");
                     var input = Read.ReadInput(false);
                     var file = FileFactory.Create(input.InputAsString);
 
@@ -51,7 +56,7 @@ namespace Terminal
                 }),
                 ("Read Kraken transactions. Print staking tax report", () =>
                 {
-                    Write("Give input file path:");
+                    Write("Give input file path (full path without \"\"):");
                     var input = Read.ReadInput(false);
                     var file = FileFactory.Create(input.InputAsString);
 
