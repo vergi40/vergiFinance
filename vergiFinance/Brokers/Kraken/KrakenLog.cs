@@ -237,7 +237,7 @@ class KrakenLog : IEventLog
         priceFetcher.FillDayUnitPrice(stakingRewards).Wait();
 
         // Each transaction object now filled with proper day unit price
-        priceFetcher.SaveUnitPrices(stakingRewards);
+        //priceFetcher.SaveUnitPrices(stakingRewards);
 
         var message = new StringBuilder();
         message.AppendLine($"Staking events for year {year}:");
