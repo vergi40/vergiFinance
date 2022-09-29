@@ -13,6 +13,12 @@ namespace vergiFinance.Brokers.Kraken.Operations
         private readonly List<SalesUnitInformation> _allSales;
         private readonly int _year;
 
+        /// <summary>
+        /// TODO move to generic implementation
+        /// TODO Separate method for transaction input
+        /// </summary>
+        /// <param name="allTransactionsForTicker"></param>
+        /// <param name="year"></param>
         public SalesCalculator(List<TransactionBase> allTransactionsForTicker, int year)
         {
             _transactions = allTransactionsForTicker.ToList();
