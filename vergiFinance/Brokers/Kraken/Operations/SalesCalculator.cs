@@ -7,7 +7,15 @@ using System.Threading.Tasks;
 
 namespace vergiFinance.Brokers.Kraken.Operations
 {
-    public class SalesCalculator
+    public class SalesFactory
+    {
+        public static ISalesCalculator ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
+        {
+            return new SalesCalculator(allTransactionsForTicker, year);
+        }
+    }
+
+    public class SalesCalculator : ISalesCalculator
     {
         private readonly List<TransactionBase> _transactions;
         private readonly List<SalesUnitInformation> _allSales;

@@ -168,7 +168,7 @@ class KrakenLog : IEventLog
 
             //
             messageBuilder.AppendLine($"Sales profit report");
-            var salesCalculator = new SalesCalculator(dict[ticker], year);
+            var salesCalculator = SalesFactory.ProcessSalesForYear(dict[ticker], year);
             var profitSales = salesCalculator.PrintProfitSales().ToList();
             if (profitSales.Any())
             {

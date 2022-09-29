@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
+using vergiFinance.Brokers.Kraken.Operations;
 
 namespace vergiFinance
 {
+    // OPERATORS
+
     /// <summary>
     /// Broker that was used for transactions, e.g. Nordnet, Kraken ...
     /// </summary>
@@ -11,7 +14,7 @@ namespace vergiFinance
     }
 
     /// <summary>
-    /// Contains all strong-typed transactions and manipulation methods
+    /// Collection entity that contains all strong-typed transactions and manipulation methods
     /// </summary>
     public interface IEventLog
     {
@@ -35,6 +38,24 @@ namespace vergiFinance
 
         List<int> TransactionYearSpan();
     }
+
+    public interface ISalesCalculator : ITaxReportOperations
+    {
+        decimal TotalProfit();
+        decimal TotalLoss();
+        decimal TotalProfitLoss();
+        TotalPurchasesAndSales CalculateTotalPurchasesAndSales();
+    }
+
+    public interface ITaxReportOperations
+    {
+        IEnumerable<string> PrintProfitSales();
+        IEnumerable<string> PrintLossSales();
+        //string PrintTotalProfit();
+        //string PrintTotalLoss();
+    }
+
+    // ENUMS
     
     public enum FiatCurrency
     {
