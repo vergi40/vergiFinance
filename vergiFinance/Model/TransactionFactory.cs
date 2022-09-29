@@ -1,7 +1,6 @@
-﻿using System;
-using vergiFinance.Brokers.Kraken;
+﻿using vergiFinance.Brokers.Kraken;
 
-namespace vergiFinance
+namespace vergiFinance.Model
 {
     public static class TransactionFactory
     {

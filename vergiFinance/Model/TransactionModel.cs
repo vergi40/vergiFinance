@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace vergiFinance
+﻿namespace vergiFinance.Model
 {
     /// <summary>
     /// Collection of most basic properties about single transaction (buy/sell/deposit/dividend etc)

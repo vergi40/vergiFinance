@@ -2,6 +2,7 @@
 using System.Transactions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using vergiFinance.Model;
 using vergiFinance.Persistence;
 
 namespace vergiFinance.Brokers.Kraken.Operations

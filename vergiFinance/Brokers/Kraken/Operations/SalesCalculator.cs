@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken.Operations
 {
@@ -23,7 +24,6 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
         /// <summary>
         /// TODO move to generic implementation
-        /// TODO Separate method for transaction input
         /// </summary>
         /// <param name="allTransactionsForTicker"></param>
         /// <param name="year"></param>
