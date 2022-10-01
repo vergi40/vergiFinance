@@ -10,5 +10,6 @@
         public static string MyDocumentsTempLocation =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TempFinance");
 
+
     }
 }
