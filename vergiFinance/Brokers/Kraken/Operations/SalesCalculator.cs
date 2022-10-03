@@ -4,15 +4,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken.Operations
 {
-    public class SalesCalculator
+    public class SalesFactory
+    {
+        public static ISalesCalculator ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
+        {
+            return new SalesCalculator(allTransactionsForTicker, year);
+        }
+    }
+
+    public class SalesCalculator : ISalesCalculator
     {
         private readonly List<TransactionBase> _transactions;
         private readonly List<SalesUnitInformation> _allSales;
         private readonly int _year;
 
+        /// <summary>
+        /// TODO move to generic implementation
+        /// </summary>
+        /// <param name="allTransactionsForTicker"></param>
+        /// <param name="year"></param>
         public SalesCalculator(List<TransactionBase> allTransactionsForTicker, int year)
         {
             _transactions = allTransactionsForTicker.ToList();

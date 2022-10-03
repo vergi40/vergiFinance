@@ -1,6 +1,8 @@
 ﻿using System.Globalization;
+using System.Transactions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using vergiFinance.Model;
 using vergiFinance.Persistence;
 
 namespace vergiFinance.Brokers.Kraken.Operations
@@ -50,10 +52,22 @@ namespace vergiFinance.Brokers.Kraken.Operations
                     continue;
                 }
 
-                var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
-                transaction.DayUnitPrice = priceAtDate;
+                try
+                {
+                    var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
+                    transaction.DayUnitPrice = priceAtDate;
+                }
+                catch (HttpRequestException e)
+                {
+                    // TODO log
+                    // Commonly throws when too many requests
+                    Console.WriteLine(e.ToString());
+                    throw;
+                }
 
-                Console.WriteLine($"Success [from http api]: {priceAtDate:G6}e");
+                Console.WriteLine($"Success [from http api]: {transaction.DayUnitPrice:G6}e");
+                SaveUnitPrice(transaction);
+                Console.WriteLine("--> Saved to db");
             }
         }
 
@@ -100,19 +114,24 @@ namespace vergiFinance.Brokers.Kraken.Operations
             return result;
         }
 
+        public void SaveUnitPrice(TransactionBase stakingRewardTransaction)
+        {
+            var dto = new StakingDto()
+            {
+                DayUnitPrice = stakingRewardTransaction.DayUnitPrice,
+                BrokerId = stakingRewardTransaction.Id,
+                Ticker = stakingRewardTransaction.Ticker,
+                TradeDate = stakingRewardTransaction.TradeDate
+            };
+
+            _stakingPersistence.SaveSingleStakingData(dto);
+        }
+
         public void SaveUnitPrices(IEnumerable<TransactionBase> stakingRewards)
         {
             foreach (var transaction in stakingRewards)
             {
-                var dto = new StakingDto()
-                {
-                    DayUnitPrice = transaction.DayUnitPrice,
-                    BrokerId = transaction.Id,
-                    Ticker = transaction.Ticker,
-                    TradeDate = transaction.TradeDate
-                };
-
-                _stakingPersistence.SaveSingleStakingData(dto);
+                SaveUnitPrice(transaction);
             }
         }
     }

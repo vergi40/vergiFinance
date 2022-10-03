@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken;
 

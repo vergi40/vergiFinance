@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using vergiFinance.Brokers.Kraken.Operations;
+using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken;
 
@@ -168,7 +169,7 @@ class KrakenLog : IEventLog
 
             //
             messageBuilder.AppendLine($"Sales profit report");
-            var salesCalculator = new SalesCalculator(dict[ticker], year);
+            var salesCalculator = SalesFactory.ProcessSalesForYear(dict[ticker], year);
             var profitSales = salesCalculator.PrintProfitSales().ToList();
             if (profitSales.Any())
             {
@@ -237,7 +238,7 @@ class KrakenLog : IEventLog
         priceFetcher.FillDayUnitPrice(stakingRewards).Wait();
 
         // Each transaction object now filled with proper day unit price
-        priceFetcher.SaveUnitPrices(stakingRewards);
+        //priceFetcher.SaveUnitPrices(stakingRewards);
 
         var message = new StringBuilder();
         message.AppendLine($"Staking events for year {year}:");

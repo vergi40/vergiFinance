@@ -1,40 +1,26 @@
-﻿using System.Collections.Generic;
+﻿using vergiFinance.Brokers.Kraken.Operations;
 
-namespace vergiFinance
+namespace vergiFinance.Model
 {
-    /// <summary>
-    /// Broker that was used for transactions, e.g. Nordnet, Kraken ...
-    /// </summary>
-    public interface IBrokerService
+    // OPERATORS
+    
+    public interface ISalesCalculator : ITaxReportOperations
     {
-        public IEventLog ReadTransactions(IReadOnlyList<string> lines);
+        decimal TotalProfit();
+        decimal TotalLoss();
+        decimal TotalProfitLoss();
+        TotalPurchasesAndSales CalculateTotalPurchasesAndSales();
     }
 
-    /// <summary>
-    /// Contains all strong-typed transactions and manipulation methods
-    /// </summary>
-    public interface IEventLog
+    public interface ITaxReportOperations
     {
-        List<TransactionBase> Transactions { get; set; }
-
-        /// <summary>
-        /// List all transactions. Print all sale events for given year. Give
-        /// details individually for sales with profit and loss.
-        /// </summary>
-        /// <param name="year"></param>
-        /// <returns></returns>
-        string PrintExtendedTaxReport(int year);
-
-        /// <summary>
-        /// List all staking events. Fetch current value for each stake reward
-        /// and print total profit.
-        /// </summary>
-        /// <param name="year"></param>
-        /// <returns></returns>
-        string PrintStakingReport(int year);
-
-        List<int> TransactionYearSpan();
+        IEnumerable<string> PrintProfitSales();
+        IEnumerable<string> PrintLossSales();
+        //string PrintTotalProfit();
+        //string PrintTotalLoss();
     }
+
+    // ENUMS
     
     public enum FiatCurrency
     {
