@@ -2,6 +2,7 @@
 using vergiCommon.IFileInterface;
 using vergiCommon.Input;
 using vergiFinance;
+using vergiFinance.Model;
 
 namespace Terminal
 {
