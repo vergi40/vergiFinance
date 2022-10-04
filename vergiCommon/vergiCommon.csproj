@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Title>vergiCommon</Title>
-		<Version>0.1.0</Version>
+		<Version>0.1.1</Version>
 		<Authors>Teemu Laine</Authors>
 		<Description>Common utilities for personal projects. Mostly input-related, repetitive work that often occures in every prototype/hobby project.</Description>
 		<PackageTags>common;utilities;path;file</PackageTags>

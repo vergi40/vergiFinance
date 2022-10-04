@@ -43,7 +43,7 @@ namespace vergiCommon
             var projectName = callingAssembly.GetName().Name + ".csproj";
 
             var projectFolderPath = TravelParentsUntilFileFound(projectName, ThisAssembly());
-            var solutionFolderPath = Directory.GetParent(projectFolderPath).FullName;
+            var solutionFolderPath = TravelParentsUntilSlnFileFound(projectFolderPath);
 
             return solutionFolderPath;
         }
@@ -65,6 +65,25 @@ namespace vergiCommon
             }
 
             throw new ArgumentException($"Could not find file traveling the folder tree. File name: {fileName}");
+        }
+
+        /// <returns>Return folder path where file was found</returns>
+        private static string TravelParentsUntilSlnFileFound(string startFolder)
+        {
+            var current = Directory.GetParent(startFolder);
+            for (int i = 0; i < 10; i++)
+            {
+                if (current == null) break;
+
+                if (current.GetFiles("*.sln").Any())
+                {
+                    return current.FullName;
+                }
+
+                current = current.Parent;
+            }
+
+            throw new ArgumentException($"Could not find sln file traveling the folder tree.");
         }
     }
 }
