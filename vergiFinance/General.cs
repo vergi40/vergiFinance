@@ -31,7 +31,8 @@ namespace vergiFinance
             var dueDate = dateCalculator.CalculateDueDate(paymentPeriodDays);
 
 
-            var messageBuilder = new StringBuilder($"---");
+            var messageBuilder = new StringBuilder();
+            messageBuilder.AppendLine($"---");
             messageBuilder.AppendLine($"Current date: {DateTime.Now}");
             messageBuilder.AppendLine($"Due date with {paymentPeriodDays} days payment period: {dueDate}");
             return messageBuilder.ToString();

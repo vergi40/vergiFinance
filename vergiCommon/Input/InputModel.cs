@@ -9,6 +9,10 @@
         bool ElevateToAdmin { get; set; }
         string InputAsString { get; set; }
         bool Equals(string text);
+
+        /// <exception cref="FormatException"></exception>
+        /// <exception cref="OverflowException"></exception>
+        int ToInt();
     }
 
     class InputKey : IInput
@@ -19,6 +23,11 @@
         public bool Equals(string text)
         {
             return text.Equals(InputAsString, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        public int ToInt()
+        {
+            return Convert.ToInt32(InputAsString);
         }
 
         public InputKey(ConsoleKeyInfo input)
@@ -50,6 +59,11 @@
         public bool Equals(string text)
         {
             return text.Equals(InputAsString, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        public int ToInt()
+        {
+            return Convert.ToInt32(InputAsString);
         }
 
         public InputString(string input)

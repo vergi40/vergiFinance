@@ -76,6 +76,15 @@ namespace Terminal
                     var report = events.PrintStakingReport(2021);
                     Write(report);
                 }),
+                ("Calculate due date for input", () =>
+                {
+                    Write("Using current date as basis. Give amount of due days:");
+                    var input = Read.ReadInput(false);
+                    var days = input.ToInt();
+
+                    var report = General.CalculateDueDate(days);
+                    Write(report);
+                }),
             };
 
             return result;

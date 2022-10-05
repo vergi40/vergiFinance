@@ -16,7 +16,7 @@
 
 
         /// <summary>
-        /// 
+        /// Read input stream. Either one key, or until ENTER is pressed.
         /// </summary>
         /// <param name="selectionModeOn">User selects one character instead of typing full string and ENTER.</param>
         /// <returns></returns>
@@ -45,6 +45,7 @@
         {
             Console.Write(InputEntry());
             var inputString = Console.ReadLine();
+            if (inputString == null) throw new ArgumentException("Null input");
             var input = new InputString(inputString);
             return input;
         }
