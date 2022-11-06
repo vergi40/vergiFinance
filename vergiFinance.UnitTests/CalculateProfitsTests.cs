@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using vergiFinance.Brokers.Kraken.Operations;
+using vergiFinance.FinanceFunctions;
 using vergiFinance.Model;
 
 namespace vergiFinance.UnitTests

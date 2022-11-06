@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using vergiFinance.Brokers.Kraken.Operations;
+using vergiFinance.FinanceFunctions;
 using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken;
