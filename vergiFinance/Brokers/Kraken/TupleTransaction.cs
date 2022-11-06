@@ -13,30 +13,28 @@ internal class TupleTransaction
 
     public TupleTransaction(RawTransaction transaction1, RawTransaction transaction2)
     {
-        var list = new List<RawTransaction> { transaction1, transaction2 };
-        foreach (var transaction in list)
+        foreach (var transactionType in new List<RawTransaction> { transaction1, transaction2 }.Select(t => t.TypeAsString))
         {
-            var type = transaction.TypeAsString;
-            if (type == "deposit")
+            if (transactionType == "deposit")
             {
                 DepositCount++;
             }
-            else if (type == "withdrawal")
+            else if (transactionType == "withdrawal")
             {
                 WithdrawalCount++;
             }
-            else if (type == "transfer")
+            else if (transactionType == "transfer")
             {
                 TransferCount++;
                 IsTransfer = true;
             }
-            else if (type is "spend" or "receive" or "trade")
+            else if (transactionType is "spend" or "receive" or "trade")
             {
                 IsTrade = true;
             }
             else
             {
-                throw new NotImplementedException($"Type {type} not implemented");
+                throw new NotImplementedException($"Type {transactionType} not implemented");
             }
         }
     }

@@ -19,11 +19,7 @@ namespace vergiFinance.Brokers
                 var action = RawTransaction.Parse(line); 
                 transactions.Add(action);
             }
-
-            var krakenLog = new KrakenLog(transactions);
-            krakenLog.Transactions.Sort((a, b) => a.TradeDate.CompareTo(b.TradeDate));
-
-            return krakenLog;
+            return EventLogFactory.CreateKrakenLog(transactions);
         }
     }
 }

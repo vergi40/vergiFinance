@@ -1,4 +1,5 @@
 ﻿using vergiFinance.Brokers.Kraken.Operations;
+using vergiFinance.FinanceFunctions;
 
 namespace vergiFinance.Model
 {
