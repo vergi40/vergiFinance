@@ -5,6 +5,17 @@ using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken;
 
+static class EventLogFactory
+{
+    public static IEventLog CreateKrakenLog(IReadOnlyList<RawTransaction> transactions)
+    {
+        var eventLog = new KrakenLog();
+        eventLog.ProcessRawTransactions(transactions);
+        eventLog.Sort();
+        return eventLog;
+    }
+}
+
 /// <summary>
 /// Parsed log that supports various operations
 /// </summary>
@@ -16,7 +27,7 @@ class KrakenLog : IEventLog
     private IEnumerable<TransactionBase> GetBuySellTransactions() => Transactions
         .Where(t => t.Type is TransactionType.Buy or TransactionType.Sell);
 
-    public KrakenLog(List<RawTransaction> transactions)
+    public void ProcessRawTransactions(IReadOnlyList<RawTransaction> transactions)
     {
         var (singles, pairs) = CombineTransactions(transactions);
 
@@ -79,8 +90,12 @@ class KrakenLog : IEventLog
         }
     }
 
-    private (List<RawTransaction> singles, List<(RawTransaction, RawTransaction)> pairs) CombineTransactions(
-        List<RawTransaction> transactions)
+    /// <summary>
+    /// Intermediate step to simplify raw transactions and combine pairs
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    private (IReadOnlyList<RawTransaction> singles, IReadOnlyList<(RawTransaction, RawTransaction)> pairs) CombineTransactions(
+        IReadOnlyList<RawTransaction> transactions)
     {
         var dict = new Dictionary<string, List<RawTransaction>>();
         foreach (var transaction in transactions)
@@ -229,6 +244,11 @@ class KrakenLog : IEventLog
         messageBuilder.AppendLine();
 
         return messageBuilder.ToString();
+    }
+
+    public void Sort()
+    {
+        Transactions.Sort((a, b) => a.TradeDate.CompareTo(b.TradeDate));
     }
 
     public string PrintStakingReport(int year)
