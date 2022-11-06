@@ -2,39 +2,43 @@
 
 namespace vergiFinance.FinanceFunctions
 {
-    public class SalesFactory
+    public static class SalesFactory
     {
-        public static ISalesCalculator ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
-        {
-            return new SalesCalculator(allTransactionsForTicker, year);
-        }
-    }
-
-    public class SalesCalculator : ISalesCalculator
-    {
-        private readonly List<TransactionBase> _transactions;
-        private readonly List<SalesUnitInformation> _allSales;
-        private readonly int _year;
-
         /// <summary>
-        /// TODO move to generic implementation
+        /// Create sales calculator and process transactions for a year.
+        /// After this the calculator can be used to fetch profits and prints
         /// </summary>
         /// <param name="allTransactionsForTicker"></param>
         /// <param name="year"></param>
-        public SalesCalculator(List<TransactionBase> allTransactionsForTicker, int year)
+        /// <returns></returns>
+        public static ISalesCalculator ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
         {
-            _transactions = allTransactionsForTicker.ToList();
-            _allSales = CalculateCumulativeSales(allTransactionsForTicker);
+            var sales = new SalesCalculator(year, SalesPrinterFactory.CreateEng());
+            sales.CalculateCumulativeSales(allTransactionsForTicker);
+            return sales;
+        }
+    }
+
+    internal class SalesCalculator : ISalesCalculator
+    {
+        private List<SalesUnitInformation> _allSales { get; }
+        private int _year { get; }
+        private SalesPrinter _printer { get; }
+        
+        public SalesCalculator(int year, SalesPrinter salesPrinter)
+        {
             _year = year;
+            _allSales = new();
+            _printer = salesPrinter;
         }
 
         /// <summary>
         /// Prerequisite: All transactions are same ticker. Only buy or sell types
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        private List<SalesUnitInformation> CalculateCumulativeSales(List<TransactionBase> transactions)
+        public void CalculateCumulativeSales(List<TransactionBase> transactions)
         {
-            var result = new List<SalesUnitInformation>();
+            _allSales.Clear();
             // Examples
             // Buy 100 @5, 500
             // Buy 100 @10, 1000
@@ -61,7 +65,7 @@ namespace vergiFinance.FinanceFunctions
 
                         // 
                         var sale = new SalesUnitInformation(transaction.AssetUnitPrice, buy.AssetUnitPrice, transaction.AssetAmount, transaction);
-                        result.Add(sale);
+                        _allSales.Add(sale);
 
                         totalProfit += profit;
                         if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
@@ -75,8 +79,8 @@ namespace vergiFinance.FinanceFunctions
                         {
                             if (!buyHistory.Any())
                             {
-                                throw new ArgumentException("Failed to calculate: there are more sell-units than buy-units.");
-                                // TODO Accurate logging
+                                throw new ArgumentException($"Failed to calculate: there are more sell-units than buy-units. " +
+                                                            $"Current transaction in iteration: {transaction}");
                             }
 
                             var buy = buyHistory.First();
@@ -88,7 +92,7 @@ namespace vergiFinance.FinanceFunctions
 
                             // 
                             var sale = new SalesUnitInformation(transaction.AssetUnitPrice, buy.AssetUnitPrice, maxReduce, transaction);
-                            result.Add(sale);
+                            _allSales.Add(sale);
 
                             totalProfit += profit;
                             if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
@@ -96,73 +100,30 @@ namespace vergiFinance.FinanceFunctions
                             counter++;
                             if (counter > 50)
                             {
-                                throw new ArgumentException($"Failed to calculate, invalid data (counter: {counter}).");
-                                // TODO Accurate logging
+                                throw new ArgumentException($"Failed to calculate, invalid data (iteration counter reached: {counter}). " +
+                                                            $"Current transaction in iteration: {transaction}");
                             }
                         }
                     }
                 }
             }
-
-            return result;
         }
 
         public IEnumerable<string> PrintProfitSales()
         {
-            foreach (var singleSale in _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year))
-            {
-                var message =
-                    $"{singleSale.TradeDate:dd/MM/yyyy} " +
-                    $"sell price {PricePrettify(singleSale.SoldTotalPrice),-10}" +
-                    $"profit {PricePrettify(singleSale.ProfitLoss),-10}" +
-                    $"unit price {UnitPricePrettify(singleSale.SoldUnitPrice)}e    " +
-                    $"original unit price {UnitPricePrettify(singleSale.OriginalUnitPrice)}e";
-                yield return message;
-            }
+            var profitSales = _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year);
+            return _printer.PrintProfitSales(profitSales);
         }
 
         public IEnumerable<string> PrintLossSales()
         {
-            foreach (var singleSale in _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year))
-            {
-                var message =
-                    $"{singleSale.TradeDate:dd/MM/yyyy} " +
-                    $"sell price {PricePrettify(singleSale.SoldTotalPrice),-10}" +
-                    $"loss   {PricePrettify(singleSale.ProfitLoss),-10}" +
-                    $"unit price {UnitPricePrettify(singleSale.SoldUnitPrice)}e    " +
-                    $"original unit price {UnitPricePrettify(singleSale.OriginalUnitPrice)}e";
-                yield return message;
-            }
+            var lossSales = _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year);
+            return _printer.PrintLossSales(lossSales);
         }
-
-        private string PricePrettify(decimal price)
-        {
-            return $"{price:F2}e";
-        }
-
-        private string UnitPricePrettify(decimal unitPrice)
-        {
-            var unitPriceString = $"{unitPrice:F2}";
-            if (unitPrice < 1) unitPriceString = $"{unitPrice:F4}";
-
-            return unitPriceString;
-        }
-
-        public string PrintTotalProfit()
-        {
-            var total = _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-            return $"{total:F2}e";
-        }
-
+        
         public decimal TotalProfit()
         {
             return _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public string PrintTotalLoss()
-        {
-            var total = _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-            return $"{total:F2}e";
         }
 
         public decimal TotalLoss()
