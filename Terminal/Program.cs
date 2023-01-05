@@ -85,6 +85,13 @@ namespace Terminal
                     var report = General.CalculateDueDate(days);
                     Write(report);
                 }),
+                ("Calculate work day amount in current month", () =>
+                {
+                    Write("Using current month as basis.");
+
+                    var report = General.CalculateWorkDays();
+                    Write(report);
+                }),
             };
 
             return result;
