@@ -46,16 +46,27 @@ namespace vergiFinance
         {
             var current = DateTime.Now;
 
+            return CalculateWorkDaysForMonth(current.Month);
+        }
+
+        /// <summary>
+        /// Calculate work days for current month
+        /// </summary>
+        /// <returns></returns>
+        public static string CalculateWorkDaysForMonth(int month)
+        {
+            var year = DateTime.Now.Year;
+
             var calculator = new WorkDaysCalculator();
-            var (workDays, publicHolidays) = calculator.CalculateWorkDaysForMonth(current.Year, current.Month);
+            var (workDays, publicHolidays) = calculator.CalculateWorkDaysForMonth(year, month);
 
             var messageBuilder = new StringBuilder();
             messageBuilder.AppendLine($"---");
-            messageBuilder.AppendLine($"Current date: {current.ToShortDateString()}");
-            messageBuilder.AppendLine($"Work days count: {workDays}. Holidays on work week: {publicHolidays}");
+            messageBuilder.AppendLine($"Given month: {month}");
+            messageBuilder.AppendLine($"Work days count: {workDays}. Holidays on work week: {publicHolidays.Count}");
             foreach (var holiday in publicHolidays)
             {
-                messageBuilder.AppendLine($"  Holiday on {holiday.ToShortDateString()}");
+                messageBuilder.AppendLine($"  Holiday on {holiday.date.ToShortDateString()}: {holiday.name}");
             }
 
             return messageBuilder.ToString();

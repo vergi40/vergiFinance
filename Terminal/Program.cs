@@ -92,6 +92,24 @@ namespace Terminal
                     var report = General.CalculateWorkDays();
                     Write(report);
                 }),
+                ("Calculate work day amount in given month", () =>
+                {
+                    Write("Please input month: ");
+                    var input = Read.ReadInput(false);
+
+                    var report = General.CalculateWorkDaysForMonth(input.ToInt());
+                    Write(report);
+                }),
+                ("Print work days and work holidays for full year", () =>
+                {
+                    Write("Work days and work holidays:");
+
+                    for(int i = 0; i < 12; i++)
+                    {
+                        var report = General.CalculateWorkDaysForMonth(i+1);
+                        Write(report);
+                    }
+                }),
             };
 
             return result;

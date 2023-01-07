@@ -9,19 +9,28 @@ namespace vergiFinance.Functions
 {
     internal class WorkDaysCalculator
     {
-        public (int workDays, IList<DateTime> workHolidays) CalculateWorkDaysForMonth(int year, int month)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>
+        /// workDays: Work day count
+        /// workHolidays: holidays on work week, with holiday names
+        /// </returns>
+        public (int workDays, IList<(DateTime date, string name)> workHolidays) CalculateWorkDaysForMonth(int year, int month)
         {
             var workDays = new List<DateTime>();
-            var workHolidays = new List<DateTime>();
-            var publicHolidays = new SwedenPublicHoliday().PublicHolidays(year);
+            var workHolidays = new List<(DateTime, string)>();
+            var calendar = new FinlandPublicHoliday(true);
+            var publicHolidayNames = calendar.PublicHolidayNames(year);
 
             for (int i = 0; i < DateTime.DaysInMonth(year, month); i++)
             {
                 var day = new DateTime(year, month, i + 1);
                 if (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
-                if (publicHolidays.Any(d => d.DayOfYear == day.DayOfYear))
+                if (publicHolidayNames.ContainsKey(day))
                 {
-                    workHolidays.Add(day);
+                    var name = publicHolidayNames[day];
+                    workHolidays.Add((day, name));
                     continue;
                 }
 
