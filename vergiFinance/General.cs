@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic;
+using System;
 using System.Text;
 using vergiFinance.Brokers;
 using vergiFinance.Functions;
@@ -70,6 +71,29 @@ namespace vergiFinance
             }
 
             return messageBuilder.ToString();
+        }
+
+        public static string GenerateSalesEstimateReport(int year, double hourlyBilling, double workHoursInDay)
+        {
+            var message = new StringBuilder("---");
+            var calculator = new WorkDaysCalculator();
+
+            var sum = 0.0;
+            for (int i = 0; i < 12; i++)
+            {
+                var (workDays, _) = calculator.CalculateWorkDaysForMonth(year, i+1);
+                message.AppendLine($"Month: {i + 1}. Work days: {workDays}");
+
+                var estimate = workDays * workHoursInDay * hourlyBilling;
+                message.AppendLine($"  Sales estimation: {estimate:F2}e");
+                sum += estimate;
+            }
+
+            message.AppendLine("---");
+            message.AppendLine($"Absolute total: {sum:F2}e");
+            message.AppendLine($"Realistic (subtracting 1/12 for holiday): {sum - sum * (1 / (double)12):F2}e");
+
+            return message.ToString();
         }
     }
 }
