@@ -23,6 +23,11 @@ namespace vergiFinance
             return broker.ReadTransactions(lines);
         }
 
+        public static IReadOnlyList<IBankTransaction> ReadBankTransactions(IReadOnlyList<string> lines)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Use current date to calculate due date for given payment period.
         /// </summary>
