@@ -11,6 +11,13 @@ Ease and automate finance stuff that would otherwise require exceling/calculator
   * Support extended to other equity types and events if deemed necessary.
 * Functions - simple functions for small tedious tasks
   * CalculateDueDate
+  * CalculateWorkDaysForMonth
+  * GenerateSalesEstimateReport
+
+### Roadmap
+* Mock data
+* Simple config whether to use mock or real data
+* Back transaction parsing and definitions support
 
 
 ## vergiCommon
