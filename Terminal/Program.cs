@@ -1,4 +1,5 @@
-﻿using vergiCommon;
+﻿using System.Globalization;
+using vergiCommon;
 using vergiCommon.IFileInterface;
 using vergiCommon.Input;
 using vergiFinance;
@@ -109,6 +110,21 @@ namespace Terminal
                         var report = General.CalculateWorkDaysForMonth(i+1);
                         Write(report);
                     }
+                }),
+                ("Calculate projected sales for given year", () =>
+                {
+                    Write("Input year, hourly billing and work hours per day");
+                    Write("Input syntax should be YEAR;HOURBILL;HPERDAY. Example: 2023;80;7,5");
+
+                    var input = Read.ReadInput(false);
+                    var array = input.InputAsString.Split(';').ToList();
+
+                    var (year, hourly, lengthStr) = (int.Parse(array[0]), double.Parse(array[1]), array[2]);
+
+                    var lengthStr2 = lengthStr.Replace('.', ',');
+                    var length = double.Parse(lengthStr2);
+                    var report = General.GenerateSalesEstimateReport(year, hourly, length);
+                    Write(report);
                 }),
             };
 
