@@ -1,7 +1,11 @@
 ﻿using System.Reflection;
+using vergiCommon.Internal;
 
 namespace vergiCommon
 {
+    /// <summary>
+    /// Interface path methods
+    /// </summary>
     public static class GetPath
     {
         public static string MyDocuments()
@@ -32,7 +36,7 @@ namespace vergiCommon
             var callingAssembly = Assembly.GetCallingAssembly();
             var projectName = callingAssembly.GetName().Name + ".csproj";
 
-            var projectFolderPath = TravelParentsUntilFileFound(projectName, ThisAssembly());
+            var projectFolderPath = PathUtils.TravelParentsUntilFileFound(projectName, ThisAssembly());
             return projectFolderPath;
         }
 
@@ -42,48 +46,10 @@ namespace vergiCommon
             var callingAssembly = Assembly.GetCallingAssembly();
             var projectName = callingAssembly.GetName().Name + ".csproj";
 
-            var projectFolderPath = TravelParentsUntilFileFound(projectName, ThisAssembly());
-            var solutionFolderPath = TravelParentsUntilSlnFileFound(projectFolderPath);
+            var projectFolderPath = PathUtils.TravelParentsUntilFileFound(projectName, ThisAssembly());
+            var solutionFolderPath = PathUtils.TravelParentsUntilSlnFileFound(projectFolderPath);
 
             return solutionFolderPath;
-        }
-
-        /// <returns>Return folder path where file was found</returns>
-        private static string TravelParentsUntilFileFound(string fileName, string startFolder)
-        {
-            var current = Directory.GetParent(startFolder);
-            for (int i = 0; i < 10; i++)
-            {
-                if (current == null) break;
-
-                if (current.EnumerateFiles().Any(x => x.Name.Equals(fileName)))
-                {
-                    return current.FullName;
-                }
-
-                current = current.Parent;
-            }
-
-            throw new ArgumentException($"Could not find file traveling the folder tree. File name: {fileName}");
-        }
-
-        /// <returns>Return folder path where file was found</returns>
-        private static string TravelParentsUntilSlnFileFound(string startFolder)
-        {
-            var current = Directory.GetParent(startFolder);
-            for (int i = 0; i < 10; i++)
-            {
-                if (current == null) break;
-
-                if (current.GetFiles("*.sln").Any())
-                {
-                    return current.FullName;
-                }
-
-                current = current.Parent;
-            }
-
-            throw new ArgumentException($"Could not find sln file traveling the folder tree.");
         }
     }
 }

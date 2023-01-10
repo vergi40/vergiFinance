@@ -4,9 +4,9 @@ using vergiCommon.File;
 
 namespace vergiCommon.IFileInterface
 {
-    public class FileFactory
+    internal class FileFactory
     {
-        public static IFile Create(string filePath, bool trustFileExtension = true)
+        public IFile Create(string filePath, bool trustFileExtension = true)
         {
             if (!trustFileExtension)
             {
@@ -33,7 +33,7 @@ namespace vergiCommon.IFileInterface
             throw new NotImplementedException("File type reading not implemented yet");
         }
 
-        private static bool IsFileRecognizable(string filePath)
+        private bool IsFileRecognizable(string filePath)
         {
             using (var fileStream = System.IO.File.OpenRead(filePath))
             {
@@ -53,7 +53,7 @@ namespace vergiCommon.IFileInterface
             }
         }
 
-        public static IFile Create(Stream stream, string extension)
+        public IFile Create(Stream stream, string extension)
         {
             var lines = new List<string>();
             using (StreamReader reader = new StreamReader(stream))
