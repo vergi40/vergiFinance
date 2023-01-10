@@ -1,6 +1,6 @@
-﻿using vergiCommon.File;
-using vergiCommon.IFileInterface;
-using vergiCommon.Input;
+﻿using vergiCommon.Internal.File;
+using vergiCommon.Internal.IFileInterface;
+using vergiCommon.Internal.Input;
 
 namespace vergiCommon
 {

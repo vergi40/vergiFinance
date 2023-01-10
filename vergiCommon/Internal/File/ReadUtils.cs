@@ -1,7 +1,7 @@
 ﻿using System.IO.Compression;
-using vergiCommon.IFileInterface;
+using vergiCommon.Internal.IFileInterface;
 
-namespace vergiCommon.File
+namespace vergiCommon.Internal.File
 {
     internal class ReadUtils
     {

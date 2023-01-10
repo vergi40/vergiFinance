@@ -1,4 +1,4 @@
-﻿namespace vergiCommon.Input
+﻿namespace vergiCommon.Internal.Input
 {
     internal class Read
     {

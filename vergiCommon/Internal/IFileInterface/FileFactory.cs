@@ -1,8 +1,7 @@
-﻿using System.Net.Mime;
-using FileTypeChecker;
-using vergiCommon.File;
+﻿using FileTypeChecker;
+using vergiCommon.Internal.File;
 
-namespace vergiCommon.IFileInterface
+namespace vergiCommon.Internal.IFileInterface
 {
     internal class FileFactory
     {

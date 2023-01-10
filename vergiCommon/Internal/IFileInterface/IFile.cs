@@ -1,4 +1,4 @@
-﻿namespace vergiCommon.IFileInterface
+﻿namespace vergiCommon.Internal.IFileInterface
 {
     public interface IFile
     {
