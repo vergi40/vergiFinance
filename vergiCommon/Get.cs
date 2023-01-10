@@ -1,6 +1,7 @@
 ﻿using vergiCommon.Internal.File;
 using vergiCommon.Internal.IFileInterface;
 using vergiCommon.Internal.Input;
+using vergiCommon.Public;
 
 namespace vergiCommon
 {
@@ -45,6 +46,17 @@ namespace vergiCommon
             var fileFactory = new FileFactory();
 
             return fileFactory.Create(filePath, trustFileExtension);
+        }
+
+        /// <summary>
+        /// Read comma-separated-values file. Provides simple data-instance where it should be
+        /// easy to utilize parsed data.
+        /// </summary>
+        public static ICsvFile ReadCsvFile(string filePath)
+        {
+            var fileFactory = new FileFactory();
+
+            return fileFactory.ReadCsvFile(filePath);
         }
 
         public static IFile ReadSingleFileFromZip(string zipPath)

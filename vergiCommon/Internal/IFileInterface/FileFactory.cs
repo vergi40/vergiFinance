@@ -1,5 +1,7 @@
-﻿using FileTypeChecker;
+﻿using System.Xml;
+using FileTypeChecker;
 using vergiCommon.Internal.File;
+using vergiCommon.Public;
 
 namespace vergiCommon.Internal.IFileInterface
 {
@@ -59,7 +61,9 @@ namespace vergiCommon.Internal.IFileInterface
             {
                 while (reader.Peek() >= 0)
                 {
-                    lines.Add(reader.ReadLine());
+                    var line = reader.ReadLine();
+                    if (line == null) break;
+                    lines.Add(line);
                 }
             }
 
@@ -67,29 +71,74 @@ namespace vergiCommon.Internal.IFileInterface
             var file = new TextFile(extension, lines);
             return file;
         }
-    }
 
-    class ExtensionValidator
-    {
-        private HashSet<string> TextExtensions => new HashSet<string>
+        /// <summary>
+        /// https://en.wikipedia.org/wiki/Comma-separated_values
+        /// </summary>
+        public ICsvFile ReadCsvFile(string filePath)
         {
-            ".txt", ".csv", ".md", ".json", ".xml"
-        };
+            var file = Create(filePath, false);
 
-        public bool IsTextFile(string filePath)
-        {
-            var extension = Path.GetExtension(filePath);
-            if (string.IsNullOrEmpty(extension)) return false;
+            if (file.Extension != "csv")
+                throw new ArgumentException($"Not valid csv file, file extension is: {file.Extension}");
 
-            return TextExtensions.Contains(extension);
+            var lines = file.Lines.Where(l => !string.IsNullOrEmpty(l)).ToList();
+            return CreateCsvFromTextFile(file);
         }
 
-        public bool IsZipFile(string filePath)
-        {
-            var extension = Path.GetExtension(filePath);
-            if (string.IsNullOrEmpty(extension)) return false;
+        private static readonly IEnumerable<string> CsvSeparators = new List<string> { ";", ",", ":", "  ", "   " };
 
-            return extension.Equals(".zip");
+        internal ICsvFile CreateCsvFromTextFile(IFile textFile)
+        {
+            var lines = textFile.Lines.Where(l => !string.IsNullOrEmpty(l)).ToList();
+            var testLineAmount = Math.Min(lines.Count, 10);
+            var resultSeparator = "";
+
+            foreach (var separator in CsvSeparators)
+            {
+                var sepCountList = new List<int>();
+                foreach (var i in Enumerable.Range(0, testLineAmount))
+                {
+                    var line = lines[i];
+                    var split = line.Split(separator);
+                    if (split.Length > 1)
+                    {
+                        var sepCount = split.Length - 1;
+                        sepCountList.Add(sepCount);
+                    }
+                }
+
+                if (!sepCountList.Any()) continue;
+                var firstCount = sepCountList.First();
+                if (sepCountList.Count == testLineAmount && sepCountList.All(c => c == firstCount))
+                {
+                    // Found suitable separator. Same amount of separators exist on each test line
+                    resultSeparator = separator;
+                    break;
+                }
+            }
+
+            return ParseCsv(resultSeparator, textFile, lines);
+        }
+
+        private ICsvFile ParseCsv(string separator, IFile textFile, IEnumerable<string> lines)
+        {
+            // TODO how to deduce header?
+            var data = new List<IReadOnlyList<string>>();
+            foreach (var line in lines)
+            {
+                var row = line.Split(separator).ToList();
+                data.Add(row);
+            }
+
+            var csv = new CsvFile(textFile)
+            {
+                Separator = separator,
+                Headers = new List<string>(),
+                Data = data
+            };
+
+            return csv;
         }
     }
 }

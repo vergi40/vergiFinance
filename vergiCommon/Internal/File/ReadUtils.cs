@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using vergiCommon.Internal.IFileInterface;
+using vergiCommon.Public;
 
 namespace vergiCommon.Internal.File
 {
