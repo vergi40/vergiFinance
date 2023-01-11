@@ -14,16 +14,20 @@ Ease and automate finance stuff that would otherwise require exceling/calculator
   * CalculateWorkDaysForMonth
   * GenerateSalesEstimateReport
 
+
 ### Roadmap
 * Mock data
 * Simple config whether to use mock or real data
-* Back transaction parsing and definitions support
+* More transaction parsing and definitions support
 
 
 ## vergiCommon
-Common utilities used in personal projects. Nuget-versioned for sharing between repos. Will be separated to own repo when the time is right
+Common utilities used in personal projects. Nuget-versioned for sharing between repos. Will be separated to own repo if grows to much.
 * GetPath - paths like sln/proj folder, assembly folder, mydocs for local development in windows file system
-* IFile - abstract (usually text) file contents behind interface
-* FileFactory - generate IFiles from given source
-* IInput - abstract user input (single key, words, numbers) behind interface
-* ReadUtils - generate IInput 
+* Get
+  * IInput ReadInput
+  * IFile ReadFile
+  * ICsvFile ReadCsvFile
+  * IFile ReadSingleFileFromZip
+  * IFile ReadFileFromZip
+  * IReadOnlyList\<string\> ReadFileNamesFromZip
