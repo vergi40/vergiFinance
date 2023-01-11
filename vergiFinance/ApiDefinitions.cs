@@ -38,9 +38,6 @@ namespace vergiFinance
 
     public interface IBankTransaction
     {
-        // Kirjauspäivä;Arvopäivä;Määrä EUROA;Laji;Selitys;Saaja/Maksaja;Saajan tilinumero ja pankin BIC;
-        // Viite;Viesti;Arkistointitunnus
-
         /// <summary>
         /// Kirjauspäivä
         /// </summary>

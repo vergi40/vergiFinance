@@ -3,6 +3,7 @@ using System;
 using System.Text;
 using vergiFinance.Brokers;
 using vergiFinance.Functions;
+using vergiFinance.Model;
 
 namespace vergiFinance
 {
@@ -23,9 +24,12 @@ namespace vergiFinance
             return broker.ReadTransactions(lines);
         }
 
-        public static IReadOnlyList<IBankTransaction> ReadBankTransactions(IReadOnlyList<string> lines)
+        public static IReadOnlyList<IBankTransaction> ReadBankTransactions(string filePath)
         {
-            throw new NotImplementedException();
+            var factory = new OpTransactionFactory();
+
+            var transactions = factory.Create(filePath);
+            return transactions;
         }
 
         /// <summary>
