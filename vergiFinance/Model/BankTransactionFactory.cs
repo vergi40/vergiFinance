@@ -5,9 +5,11 @@ namespace vergiFinance.Model
 {
     internal class OpTransactionFactory
     {
+        private static IFormatProvider _format = new CultureInfo("fi-FI");
+
         public List<IBankTransaction> Create(string filePath)
         {
-            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
             var csv = Get.ReadCsvFile(filePath);
 
             var result = new List<IBankTransaction>();
@@ -19,14 +21,14 @@ namespace vergiFinance.Model
             return result;
         }
 
-        private IBankTransaction MapRowToInstance(IReadOnlyList<string> row)
+        internal IBankTransaction MapRowToInstance(IReadOnlyList<string> row)
         {
             // Kirjauspäivä;Arvopäivä;Määrä EUROA;Laji;Selitys;Saaja/Maksaja;Saajan tilinumero ja pankin BIC;
             // Viite;Viesti;Arkistointitunnus
             var transaction = new BankTransactionModel()
             {
-                RecordDate = DateOnly.Parse(row[0], new CultureInfo("fi-FI")),
-                PaymentDate = DateOnly.Parse(row[1], new CultureInfo("fi-FI")),
+                RecordDate = DateOnly.Parse(row[0], _format),
+                PaymentDate = DateOnly.Parse(row[1], _format),
                 Amount = decimal.Parse(row[2]),
                 Kind = row[3],
                 RecordType = row[4],

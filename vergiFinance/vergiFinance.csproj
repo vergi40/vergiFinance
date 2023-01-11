@@ -15,5 +15,10 @@
   <ItemGroup>
     <ProjectReference Include="..\vergiCommon\vergiCommon.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>vergiFinance.UnitTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
 </Project>
