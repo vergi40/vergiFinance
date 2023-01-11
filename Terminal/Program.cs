@@ -123,6 +123,18 @@ namespace Terminal
                     var report = General.GenerateSalesEstimateReport(year, hourly, length);
                     Write(report);
                 }),
+                ("DEBUG Read and print bank transactions", () =>
+                {
+                    Write("Give input file path:");
+                    var input = Get.ReadInput(false);
+
+                    var transactions = General.ReadBankTransactions(input.InputAsString);
+                    foreach (var t in transactions)
+                    {
+                        // TODO from/to based on positive/negative amount
+                        Console.WriteLine($"{t.RecordDate}: {t.Amount:F2} to ({t.Recipient}, {t.BankAccount})");
+                    }
+                }),
             };
 
             return result;

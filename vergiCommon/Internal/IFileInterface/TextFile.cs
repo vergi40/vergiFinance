@@ -13,7 +13,7 @@ namespace vergiCommon.Internal.IFileInterface
         public TextFile(IFile file)
         {
             FilePath = file.FilePath;
-            Extension = file.Extension;
+            Extension = file.Extension.Replace(".", "");
             Content = file.Content;
             Lines = file.Lines;
         }
@@ -22,7 +22,7 @@ namespace vergiCommon.Internal.IFileInterface
         {
             FilePath = filePath;
             var file = new FileInfo(filePath);
-            Extension = file.Extension;
+            Extension = file.Extension.Replace(".", "");
 
             Lines = new List<string>(lines);
             Content = string.Join("", Lines);

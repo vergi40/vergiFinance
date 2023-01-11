@@ -5,7 +5,7 @@
         string FilePath { get; }
 
         /// <summary>
-        /// File extension without .
+        /// File extension without "."
         /// </summary>
         string Extension { get; }
         string Content { get; }

@@ -9,6 +9,11 @@ namespace vergiCommon.Internal.IFileInterface
     {
         public IFile Create(string filePath, bool trustFileExtension = true)
         {
+            if (!System.IO.File.Exists(filePath))
+            {
+                throw new ArgumentException($"No file exists in path {filePath}");
+            }
+
             if (!trustFileExtension)
             {
                 // https://github.com/AJMitev/FileTypeChecker
@@ -77,7 +82,7 @@ namespace vergiCommon.Internal.IFileInterface
         /// </summary>
         public ICsvFile ReadCsvFile(string filePath)
         {
-            var file = Create(filePath, false);
+            var file = Create(filePath, true);
 
             if (file.Extension != "csv")
                 throw new ArgumentException($"Not valid csv file, file extension is: {file.Extension}");

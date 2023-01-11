@@ -1,4 +1,5 @@
-﻿using vergiCommon;
+﻿using System.Globalization;
+using vergiCommon;
 
 namespace vergiFinance.Model
 {
@@ -6,6 +7,7 @@ namespace vergiFinance.Model
     {
         public List<IBankTransaction> Create(string filePath)
         {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             var csv = Get.ReadCsvFile(filePath);
 
             var result = new List<IBankTransaction>();
@@ -23,8 +25,8 @@ namespace vergiFinance.Model
             // Viite;Viesti;Arkistointitunnus
             var transaction = new BankTransactionModel()
             {
-                RecordDate = DateOnly.Parse(row[0]),
-                PaymentDate = DateOnly.Parse(row[1]),
+                RecordDate = DateOnly.Parse(row[0], new CultureInfo("fi-FI")),
+                PaymentDate = DateOnly.Parse(row[1], new CultureInfo("fi-FI")),
                 Amount = decimal.Parse(row[2]),
                 Kind = row[3],
                 RecordType = row[4],
