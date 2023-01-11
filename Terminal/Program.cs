@@ -1,7 +1,4 @@
-﻿using System.Globalization;
-using vergiCommon;
-using vergiCommon.IFileInterface;
-using vergiCommon.Input;
+﻿using vergiCommon;
 using vergiFinance;
 using vergiFinance.Model;
 
@@ -25,7 +22,7 @@ namespace Terminal
             }
 
             Write();
-            var input = Read.ReadInput(true);
+            var input = Get.ReadInput(true);
             if (validInputs.Contains(input.InputAsString))
             {
                 utils[Convert.ToInt32(input.InputAsString) - 1].action();
@@ -48,8 +45,8 @@ namespace Terminal
                 ("Read Kraken transactions. Print sales tax report", () =>
                 {
                     Write("Give input file path (full path without \"\"):");
-                    var input = Read.ReadInput(false);
-                    var file = FileFactory.Create(input.InputAsString);
+                    var input = Get.ReadInput(false);
+                    var file = Get.ReadFile(input.InputAsString);
 
                     var events = General.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
@@ -59,8 +56,8 @@ namespace Terminal
                 ("Read Kraken transactions. Print staking tax report", () =>
                 {
                     Write("Give input file path (full path without \"\"):");
-                    var input = Read.ReadInput(false);
-                    var file = FileFactory.Create(input.InputAsString);
+                    var input = Get.ReadInput(false);
+                    var file = Get.ReadFile(input.InputAsString);
 
                     var events = General.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
@@ -71,7 +68,7 @@ namespace Terminal
                 {
                     Write("Analyzing 2021 ledger staking rewards...");
                     var path = Path.Combine(Constants.MyDocumentsTempLocation, "ledgers-2021.csv");
-                    var file = FileFactory.Create(path);
+                    var file = Get.ReadFile(path);
 
                     var events = General.ReadKrakenTransactions(file.Lines);
                     var report = events.PrintStakingReport(2021);
@@ -80,7 +77,7 @@ namespace Terminal
                 ("Calculate due date for input", () =>
                 {
                     Write("Using current date as basis. Give amount of due days:");
-                    var input = Read.ReadInput(false);
+                    var input = Get.ReadInput(false);
                     var days = input.ToInt();
 
                     var report = General.CalculateDueDate(days);
@@ -96,7 +93,7 @@ namespace Terminal
                 ("Calculate work day amount in given month", () =>
                 {
                     Write("Please input month: ");
-                    var input = Read.ReadInput(false);
+                    var input = Get.ReadInput(false);
 
                     var report = General.CalculateWorkDaysForMonth(input.ToInt());
                     Write(report);
@@ -116,7 +113,7 @@ namespace Terminal
                     Write("Input year, hourly billing and work hours per day");
                     Write("Input syntax should be YEAR;HOURBILL;HPERDAY. Example: 2023;80;7,5");
 
-                    var input = Read.ReadInput(false);
+                    var input = Get.ReadInput(false);
                     var array = input.InputAsString.Split(';').ToList();
 
                     var (year, hourly, lengthStr) = (int.Parse(array[0]), double.Parse(array[1]), array[2]);
@@ -142,17 +139,8 @@ namespace Terminal
             }
 
             Write("");
-            var input = Read.ReadInput(false);
-            var inputAsInt = Convert.ToInt32(input.InputAsString);
-
-            if (years.Contains(inputAsInt))
-            {
-                return inputAsInt;
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid input: {input.InputAsString}");
-            }
+            var input = Get.ReadInput(false);
+            return input.ToInt();
         }
 
         private static void Write(string message = "") => Console.WriteLine(message);

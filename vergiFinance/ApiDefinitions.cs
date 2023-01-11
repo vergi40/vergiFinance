@@ -35,4 +35,48 @@ namespace vergiFinance
 
         List<int> TransactionYearSpan();
     }
+
+    public interface IBankTransaction
+    {
+        // Kirjauspäivä;Arvopäivä;Määrä EUROA;Laji;Selitys;Saaja/Maksaja;Saajan tilinumero ja pankin BIC;
+        // Viite;Viesti;Arkistointitunnus
+
+        /// <summary>
+        /// Kirjauspäivä
+        /// </summary>
+        DateOnly RecordDate { get; }
+
+        /// <summary>
+        /// Arvopäivä
+        /// </summary>
+        DateOnly PaymentDate { get; }
+
+        decimal Amount { get; }
+
+        /// <summary>
+        /// Laji
+        /// </summary>
+        string Kind { get; }
+
+        /// <summary>
+        /// Selitys. TILISIIRTO, PALVELUMAKSU...
+        /// </summary>
+        string RecordType { get; }
+
+        string Recipient { get; }
+
+        string BankAccount { get; }
+
+        /// <summary>
+        /// Viite
+        /// </summary>
+        string Reference { get; }
+
+        string Message { get; }
+
+        /// <summary>
+        /// Arkistointitunnus
+        /// </summary>
+        string RecordId { get; }
+    }
 }
