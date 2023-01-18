@@ -76,7 +76,7 @@ namespace vergiFinance
             messageBuilder.AppendLine($"Work days count: {workDays}. Holidays on work week: {publicHolidays.Count}");
             foreach (var holiday in publicHolidays)
             {
-                messageBuilder.AppendLine($"  Holiday on {holiday.date.ToShortDateString()}: {holiday.name}");
+                messageBuilder.AppendLine($"  Holiday on {holiday.date:d}: {holiday.name}");
             }
 
             return messageBuilder.ToString();

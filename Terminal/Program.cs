@@ -132,7 +132,7 @@ namespace Terminal
                     foreach (var t in transactions)
                     {
                         // TODO from/to based on positive/negative amount
-                        Console.WriteLine($"{t.RecordDate}: {t.Amount:F2} to ({t.Recipient}, {t.BankAccount})");
+                        Console.WriteLine($"{t.RecordDate:d}: {t.Amount:F2} to ({t.Recipient}, {t.BankAccount})");
                     }
                 }),
             };

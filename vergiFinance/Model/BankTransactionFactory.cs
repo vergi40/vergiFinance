@@ -27,8 +27,8 @@ namespace vergiFinance.Model
             // Viite;Viesti;Arkistointitunnus
             var transaction = new BankTransactionModel()
             {
-                RecordDate = DateOnly.Parse(row[0], _format),
-                PaymentDate = DateOnly.Parse(row[1], _format),
+                RecordDate = DateTime.Parse(row[0], _format),
+                PaymentDate = DateTime.Parse(row[1], _format),
                 Amount = decimal.Parse(row[2]),
                 Kind = row[3],
                 RecordType = row[4],

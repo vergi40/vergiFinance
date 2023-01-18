@@ -41,12 +41,12 @@ namespace vergiFinance
         /// <summary>
         /// Kirjauspäivä
         /// </summary>
-        DateOnly RecordDate { get; }
+        DateTime RecordDate { get; }
 
         /// <summary>
         /// Arvopäivä
         /// </summary>
-        DateOnly PaymentDate { get; }
+        DateTime PaymentDate { get; }
 
         decimal Amount { get; }
 

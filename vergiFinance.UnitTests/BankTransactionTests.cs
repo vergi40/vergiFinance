@@ -29,7 +29,7 @@ namespace vergiFinance.UnitTests
 
             var result = _factory.MapRowToInstance(rows);
             result.Amount.ShouldBe(-46.63m);
-            result.PaymentDate.ShouldBe(new DateOnly(2022, 9, 2));
+            result.PaymentDate.ShouldBe(new DateTime(2022, 9, 2));
         }
     }
 }

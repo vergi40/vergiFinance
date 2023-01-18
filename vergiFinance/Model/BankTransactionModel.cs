@@ -2,8 +2,8 @@
 
 internal class BankTransactionModel : IBankTransaction
 {
-    public DateOnly RecordDate { get; set; }
-    public DateOnly PaymentDate { get; set; }
+    public DateTime RecordDate { get; set; }
+    public DateTime PaymentDate { get; set; }
     public decimal Amount { get; set; }
     public string Kind { get; set; }
     public string RecordType { get; set; }
