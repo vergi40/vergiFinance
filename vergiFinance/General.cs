@@ -82,7 +82,7 @@ namespace vergiFinance
             return messageBuilder.ToString();
         }
 
-        public static string GenerateSalesEstimateReport(int year, double hourlyBilling, double workHoursInDay)
+        public static string GenerateSalesEstimateReport(int year, double hourlyBilling, double workHoursInDay, bool includeVat = false)
         {
             var message = new StringBuilder("---");
             var calculator = new WorkDaysCalculator();
@@ -94,6 +94,7 @@ namespace vergiFinance
                 message.AppendLine($"Month: {i + 1}. Work days: {workDays}");
 
                 var estimate = workDays * workHoursInDay * hourlyBilling;
+                if(includeVat) estimate *= 1.24;
                 message.AppendLine($"  Sales estimation: {estimate:F2}e");
                 sum += estimate;
             }
