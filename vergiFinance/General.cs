@@ -40,11 +40,13 @@ namespace vergiFinance
         {
             var dateCalculator = new DateCalculator();
             var dueDate = dateCalculator.CalculateDueDate(paymentPeriodDays);
+            var dueDateWorkDay = dateCalculator.CalculateDueDateOnWorkDay(paymentPeriodDays);
 
             var messageBuilder = new StringBuilder();
             messageBuilder.AppendLine($"---");
             messageBuilder.AppendLine($"Current date: {DateTime.Now.ToShortDateString()}");
             messageBuilder.AppendLine($"Due date with {paymentPeriodDays} days payment period: {dueDate}");
+            messageBuilder.AppendLine($"Due date (on work day) with {paymentPeriodDays} days payment period: {dueDateWorkDay}");
             return messageBuilder.ToString();
         }
 
