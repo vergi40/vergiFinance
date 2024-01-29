@@ -1,4 +1,5 @@
 ﻿using vergiFinance.Model;
+// ReSharper disable CommentTypo
 
 namespace vergiFinance
 {
@@ -60,6 +61,9 @@ namespace vergiFinance
         /// </summary>
         string RecordType { get; }
 
+        /// <summary>
+        /// Saaja / Maksaja. Money receiver or money sender
+        /// </summary>
         string Recipient { get; }
 
         string BankAccount { get; }

@@ -1,15 +1,14 @@
-﻿using Microsoft.VisualBasic;
-using System;
-using System.Text;
+﻿using System.Text;
 using vergiFinance.Brokers;
 using vergiFinance.Functions;
 using vergiFinance.Model;
 
 namespace vergiFinance
 {
-    // Implement generic methods to handle any kind of transaction
-
-    public static class General
+    /// <summary>
+    /// Static api to do finance-related stuff
+    /// </summary>
+    public static class Api
     {
         /// <summary>
         /// Generates event collection entity, which can be used in various sales calculations and reports
@@ -18,12 +17,18 @@ namespace vergiFinance
         /// <returns></returns>
         public static IEventLog ReadKrakenTransactions(IReadOnlyList<string> lines)
         {
-            // TODO IoC binding
             IBrokerService broker = new KrakenBroker();
 
             return broker.ReadTransactions(lines);
         }
 
+        /// <summary>
+        /// Read bank transactions csv to structured list.
+        /// Supported schemas:
+        /// * OP
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         public static IReadOnlyList<IBankTransaction> ReadBankTransactions(string filePath)
         {
             var factory = new OpTransactionFactory();
@@ -40,18 +45,20 @@ namespace vergiFinance
         {
             var dateCalculator = new DateCalculator();
             var dueDate = dateCalculator.CalculateDueDate(paymentPeriodDays);
+            var dueDateWorkDay = dateCalculator.CalculateDueDateOnWorkDay(paymentPeriodDays);
 
             var messageBuilder = new StringBuilder();
             messageBuilder.AppendLine($"---");
             messageBuilder.AppendLine($"Current date: {DateTime.Now.ToShortDateString()}");
             messageBuilder.AppendLine($"Due date with {paymentPeriodDays} days payment period: {dueDate}");
+            messageBuilder.AppendLine($"Due date (on work day) with {paymentPeriodDays} days payment period: {dueDateWorkDay}");
             return messageBuilder.ToString();
         }
 
         /// <summary>
         /// Calculate work days for current month
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Print containing relevant info</returns>
         public static string CalculateWorkDays()
         {
             var current = DateTime.Now;
@@ -62,7 +69,7 @@ namespace vergiFinance
         /// <summary>
         /// Calculate work days for current month
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Print containing relevant info, including each holiday</returns>
         public static string CalculateWorkDaysForMonth(int month)
         {
             var year = DateTime.Now.Year;
@@ -82,7 +89,15 @@ namespace vergiFinance
             return messageBuilder.ToString();
         }
 
-        public static string GenerateSalesEstimateReport(int year, double hourlyBilling, double workHoursInDay)
+        /// <summary>
+        /// Based on work days in a year, calculate sales estimate
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="hourlyBilling"></param>
+        /// <param name="workHoursInDay"></param>
+        /// <param name="includeVat"></param>
+        /// <returns>Print containing relevant info</returns>
+        public static string GenerateSalesEstimateReport(int year, double hourlyBilling, double workHoursInDay, bool includeVat = false)
         {
             var message = new StringBuilder("---");
             var calculator = new WorkDaysCalculator();
@@ -94,6 +109,7 @@ namespace vergiFinance
                 message.AppendLine($"Month: {i + 1}. Work days: {workDays}");
 
                 var estimate = workDays * workHoursInDay * hourlyBilling;
+                if(includeVat) estimate *= 1.24;
                 message.AppendLine($"  Sales estimation: {estimate:F2}e");
                 sum += estimate;
             }

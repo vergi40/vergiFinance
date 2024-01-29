@@ -48,7 +48,7 @@ namespace Terminal
                     var input = Get.ReadInput(false);
                     var file = Get.ReadFile(input.InputAsString);
 
-                    var events = General.ReadKrakenTransactions(file.Lines);
+                    var events = Api.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintExtendedTaxReport(year);
                     Write(report);
@@ -59,7 +59,7 @@ namespace Terminal
                     var input = Get.ReadInput(false);
                     var file = Get.ReadFile(input.InputAsString);
 
-                    var events = General.ReadKrakenTransactions(file.Lines);
+                    var events = Api.ReadKrakenTransactions(file.Lines);
                     var year = PrintYearRangeAndAskInput(events);
                     var report = events.PrintStakingReport(year);
                     Write(report);
@@ -70,7 +70,7 @@ namespace Terminal
                     var path = Path.Combine(Constants.MyDocumentsTempLocation, "ledgers-2021.csv");
                     var file = Get.ReadFile(path);
 
-                    var events = General.ReadKrakenTransactions(file.Lines);
+                    var events = Api.ReadKrakenTransactions(file.Lines);
                     var report = events.PrintStakingReport(2021);
                     Write(report);
                 }),
@@ -80,14 +80,14 @@ namespace Terminal
                     var input = Get.ReadInput(false);
                     var days = input.ToInt();
 
-                    var report = General.CalculateDueDate(days);
+                    var report = Api.CalculateDueDate(days);
                     Write(report);
                 }),
                 ("Calculate work day amount in current month", () =>
                 {
                     Write("Using current month as basis.");
 
-                    var report = General.CalculateWorkDays();
+                    var report = Api.CalculateWorkDays();
                     Write(report);
                 }),
                 ("Calculate work day amount in given month", () =>
@@ -95,7 +95,7 @@ namespace Terminal
                     Write("Please input month: ");
                     var input = Get.ReadInput(false);
 
-                    var report = General.CalculateWorkDaysForMonth(input.ToInt());
+                    var report = Api.CalculateWorkDaysForMonth(input.ToInt());
                     Write(report);
                 }),
                 ("Print work days and work holidays for full year", () =>
@@ -104,7 +104,7 @@ namespace Terminal
 
                     for(int i = 0; i < 12; i++)
                     {
-                        var report = General.CalculateWorkDaysForMonth(i+1);
+                        var report = Api.CalculateWorkDaysForMonth(i+1);
                         Write(report);
                     }
                 }),
@@ -120,7 +120,7 @@ namespace Terminal
 
                     var lengthStr2 = lengthStr.Replace('.', ',');
                     var length = double.Parse(lengthStr2);
-                    var report = General.GenerateSalesEstimateReport(year, hourly, length);
+                    var report = Api.GenerateSalesEstimateReport(year, hourly, length);
                     Write(report);
                 }),
                 ("DEBUG Read and print bank transactions", () =>
@@ -128,7 +128,7 @@ namespace Terminal
                     Write("Give input file path:");
                     var input = Get.ReadInput(false);
 
-                    var transactions = General.ReadBankTransactions(input.InputAsString);
+                    var transactions = Api.ReadBankTransactions(input.InputAsString);
                     foreach (var t in transactions)
                     {
                         // TODO from/to based on positive/negative amount
