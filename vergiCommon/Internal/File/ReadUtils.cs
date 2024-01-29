@@ -22,6 +22,7 @@ namespace vergiCommon.Internal.File
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
             {
                 var entry = archive.GetEntry(fileName);
+                if (entry == null) throw new InvalidOperationException($"Entry does not exist in the zip: {fileName}");
                 return new FileFactory().Create(entry.Open(), extension);
             }
         }
@@ -31,6 +32,7 @@ namespace vergiCommon.Internal.File
             using (ZipArchive archive = ZipFile.OpenRead(zipPath))
             {
                 var entry = archive.Entries.FirstOrDefault();
+                if (entry == null) throw new InvalidOperationException($"The zip archive contains no entries. Zip path: {zipPath}");
                 var extension = Path.GetExtension(entry.FullName);
                 extension = extension.Replace(".", "");
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Bson;
+using NUnit.Framework.Legacy;
 using vergiFinance.Persistence;
 
 namespace vergiFinance.UnitTests
@@ -35,8 +36,8 @@ namespace vergiFinance.UnitTests
 
             _dbInstance.SaveSingleStakingData(dto);
 
-            Assert.IsTrue(_dbInstance.TryLoadSingleStakingData(dto.Ticker, dto.TradeDate, out var result));
-            Assert.AreEqual(dto.DayUnitPrice, result.DayUnitPrice);
+            ClassicAssert.IsTrue(_dbInstance.TryLoadSingleStakingData(dto.Ticker, dto.TradeDate, out var result));
+            ClassicAssert.AreEqual(dto.DayUnitPrice, result.DayUnitPrice);
 
         }
 
