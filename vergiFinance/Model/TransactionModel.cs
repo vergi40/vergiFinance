@@ -79,7 +79,15 @@
 
         public override string ToString()
         {
-            return $"{Type.ToString()}: {Ticker} -> {TotalPrice:F2} {FiatCurrency}";
+            return Type switch
+            {
+                TransactionType.Buy => $"{Type.ToString()}: {TotalPrice:F2} {FiatCurrency} -> {AssetAmount}{Ticker}",
+                TransactionType.Sell => $"{Type.ToString()}: {AssetAmount}{Ticker} -> {TotalPrice:F2} {FiatCurrency}",
+                TransactionType.WalletToStaking => $"{Type.ToString()}: {AssetAmount}{Ticker} wallet -> staking",
+                TransactionType.StakingToWallet => $"{Type.ToString()}: {AssetAmount}{Ticker} staking -> wallet",
+                TransactionType.StakingDividend => $"{Type.ToString()}: {TotalPrice:F2}{Ticker}",
+                _ => $"{Type.ToString()}: {Ticker} -> {TotalPrice:F2} {FiatCurrency}"
+            };
         }
 
         public string ToKrakenTransactionString(char fiatType = 'e')

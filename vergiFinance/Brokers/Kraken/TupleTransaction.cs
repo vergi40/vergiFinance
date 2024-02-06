@@ -1,4 +1,6 @@
-﻿namespace vergiFinance.Brokers.Kraken;
+﻿using vergiFinance.Model;
+
+namespace vergiFinance.Brokers.Kraken;
 
 /// <summary>
 /// Represents complete transactions parsed from 1 or 2 <see cref="RawTransaction"/>
@@ -10,11 +12,13 @@ internal class TupleTransaction
     public int TransferCount { get; }
     public bool IsTransfer { get; }
     public bool IsTrade { get; }
+    public TransactionType StakeTransferType { get; set; } = TransactionType.Noop;
 
     public TupleTransaction(RawTransaction transaction1, RawTransaction transaction2)
     {
-        foreach (var transactionType in new List<RawTransaction> { transaction1, transaction2 }.Select(t => t.TypeAsString))
+        foreach (var transaction in new List<RawTransaction> { transaction1, transaction2 })
         {
+            var transactionType = transaction.TypeAsString;
             if (transactionType == "deposit")
             {
                 DepositCount++;
@@ -27,6 +31,14 @@ internal class TupleTransaction
             {
                 TransferCount++;
                 IsTransfer = true;
+                if (transaction.SubType == "spottostaking" || transaction.SubType == "stakingfromspot")
+                {
+                    StakeTransferType = TransactionType.WalletToStaking;
+                }
+                else if (transaction.SubType == "stakingtospot" || transaction.SubType == "spotfromstaking")
+                {
+                    StakeTransferType = TransactionType.StakingToWallet;
+                }
             }
             else if (transactionType is "spend" or "receive" or "trade")
             {

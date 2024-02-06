@@ -94,32 +94,53 @@ namespace vergiFinance.Model
             return transaction;
         }
 
-        public static TransactionBase CreateStakingTransfer(TransactionType transferType, RawTransaction item1, RawTransaction item2)
+        /// <summary>
+        /// Create single transfer item from 4 lines of data
+        /// </summary>
+        /// <param name="transferType"></param>
+        /// <param name="isWithdrawalSide"></param>
+        /// <param name="item1"></param>
+        /// <param name="item2"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static TransactionBase CreateStakingTransfer(TransactionType transferType, bool isWithdrawalSide, RawTransaction item1, RawTransaction item2)
         {
-            // "",						"BUOCI3H-OT5F7V-CMBJ7A","2021-07-20 10:22:11","withdrawal","","currency","XETH",-0.3000000000,0.0000000000,""
-            // "",						"RUNDM24-Q3U73U-UPTDYL","2021-07-20 10:25:39","deposit","","currency","ETH2.S",0.3000000000,0.0000000000,""
-            // "L6I7Z5-75SMK-MF6FOA",	"BUOCI3H-OT5F7V-CMBJ7A","2021-07-20 10:25:40","transfer","spottostaking","currency","XETH",-0.3000000000,0.0000000000,0.0274338800
-            // "LSIGU5-BHE2C-BLCKQV",	"RUNDM24-Q3U73U-UPTDYL","2021-07-21 00:49:21","transfer","stakingfromspot","currency","ETH2.S",0.3000000000,0.0000000000,0.9000000000
-            if (transferType == TransactionType.StakingDeposit)
-            {
-                var (deposit, transfer) = (item1, item2);
-                if (item1.TypeAsString == "transfer")
-                {
-                    (transfer, deposit) = (deposit, transfer);
-                }
+            // "","BU2WOCW-TAKWRI-NPGRSY","2022-04-02 19:38:18","withdrawal","","currency","TRX",-11286.68171500,0.00000000,""
+            // "id1","BU2WOCW-TAKWRI-NPGRSY","2022-04-02 19:39:55","transfer","spottostaking","currency","TRX",-11286.68171500,0.00000000,0.00000058
+            // "","RU2HAZV-UZKGZM-K2VGQI","2022-04-02 19:41:06","deposit","","currency","TRX.S",11286.68171500,0.00000000,""
+            // "id1","RU2HAZV-UZKGZM-K2VGQI","2022-04-02 19:41:44","transfer","stakingfromspot","currency","TRX.S",11286.68171500,0.00000000,11286.68171500
 
-                return TransactionFactory.Create(transferType, FiatCurrency.Eur, transfer.TypeAsString,
-                    Math.Abs(transfer.Amount), 0m, transfer.Time);
-            }
-            else if (transferType == TransactionType.StakingWithdrawal)
+            // "","BU3HP7C-4AQSGP-NPNBBB","2022-05-31 19:39:07","withdrawal","","currency","TRX.S",-11395.86825000,0.00000000,""
+            // "id1","BU3HP7C-4AQSGP-NPNBBB","2022-05-31 19:40:51","transfer","stakingtospot","currency","TRX.S",-11395.86825000,0.00000000,0.00000000
+            // "","RUZPX6Q-QE5IZI-DDHARS","2022-05-31 19:41:47","deposit","","currency","TRX",11395.86825000,0.00000000,""
+            // "id1","RUZPX6Q-QE5IZI-DDHARS","2022-05-31 19:42:30","transfer","spotfromstaking","currency","TRX",11395.86825000,0.00000000,11395.86825058
+
+            if (!isWithdrawalSide) throw new InvalidOperationException("Invalid data to create staking transfer");
+            if (transferType == TransactionType.WalletToStaking)
             {
+                // Ensure order
                 var (withdrawal, transfer) = (item1, item2);
-                if (item1.TypeAsString == "transfer")
-                {
-                    (transfer, withdrawal) = (withdrawal, transfer);
-                }
+                if (item1.TypeAsString == "transfer") (transfer, withdrawal) = (withdrawal, transfer);
 
-                return TransactionFactory.Create(transferType, FiatCurrency.Eur, transfer.TypeAsString,
+                if (transfer.Asset.EndsWith(".S"))
+                {
+                    throw new InvalidOperationException("Logical error");
+                }
+                return TransactionFactory.Create(transferType, FiatCurrency.Eur, transfer.Asset,
+                    Math.Abs(transfer.Amount), 0m, withdrawal.Time);
+            }
+            else if (transferType == TransactionType.StakingToWallet)
+            {
+                // Ensure order
+                var (withdrawal, transfer) = (item1, item2);
+                if (item1.TypeAsString == "transfer") (transfer, withdrawal) = (withdrawal, transfer);
+
+                var ticker = transfer.Asset;
+                if (ticker.EndsWith(".S"))
+                {
+                    ticker = ticker.Substring(0, ticker.Length - 2);
+                }
+                return TransactionFactory.Create(transferType, FiatCurrency.Eur, ticker,
                     Math.Abs(transfer.Amount), 0m, withdrawal.Time);
             }
             else
