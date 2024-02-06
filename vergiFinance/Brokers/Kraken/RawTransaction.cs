@@ -55,7 +55,11 @@ public class RawTransaction
         line = line.Replace("\"", "");
         var columns = line.Split(",");
 
-        DateTime.TryParse(columns[2], out var dateTime);
+        // "txid","refid","time","type","subtype","aclass","asset","amount","fee","balance"
+        if(!DateTime.TryParse(columns[2], out var dateTime))
+        {
+            throw new ArgumentException($"Failed to parse datetime {columns[2]}");
+        }
         decimal.TryParse(columns[7], out var amount);
         decimal.TryParse(columns[8], out var fee);
         decimal.TryParse(columns[9], out var balance);

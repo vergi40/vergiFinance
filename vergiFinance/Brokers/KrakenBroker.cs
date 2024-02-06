@@ -12,8 +12,13 @@ namespace vergiFinance.Brokers
         public IEventLog ReadTransactions(IReadOnlyList<string> lines)
         {
             var transactions = new List<RawTransaction>();
-            foreach (var line in lines.Skip(1))
+            foreach (var line in lines)
             {
+                if (line.StartsWith("\"txid\"", StringComparison.InvariantCulture))
+                {
+                    // CSV definition line
+                    continue;
+                }
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
                 var action = RawTransaction.Parse(line); 
