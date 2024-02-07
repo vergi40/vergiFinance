@@ -16,7 +16,7 @@ namespace vergiFinance.Brokers.Kraken.Operations
         Task<decimal> GetCoinPriceForDate(string ticker, DateTime date);
     }
 
-    public class PriceFetcher
+    public class PriceFetcher : IPriceFetcher
     {
         /// <summary>
         /// CoinGecko uses own id's
@@ -93,6 +93,7 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
             var response = await _client.GetAsync(req);
             response.EnsureSuccessStatusCode();
+            await Task.Delay(500);
             return DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
         }
 

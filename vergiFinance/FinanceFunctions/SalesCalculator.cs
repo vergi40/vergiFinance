@@ -33,6 +33,19 @@ namespace vergiFinance.FinanceFunctions
         private int _year { get; }
         private SalesPrinter _printer { get; }
         private IPriceFetcher? _fetcher { get; }
+
+        public string Ticker { get; private set; } = "null";
+
+        /// <summary>
+        /// Tax implications
+        /// </summary>
+        public bool ContainsSellEvents { get; private set; }
+        /// <summary>
+        /// Tax implications
+        /// </summary>
+        public bool ContainsStakingWithdrawals { get; private set; }
+
+        public StakingInfo Staking { get; } = new();
         
         public SalesCalculator(int year, SalesPrinter salesPrinter)
         {
@@ -79,6 +92,8 @@ namespace vergiFinance.FinanceFunctions
         { 
             if (_fetcher == null) throw new InvalidOperationException("Logical error");
             _allSales.Clear();
+            if (transactions.Any()) Ticker = transactions[0].Ticker;
+
 
             var totalProfit = 0m;
             var buyHistory = new List<TransactionBase>();
@@ -94,6 +109,7 @@ namespace vergiFinance.FinanceFunctions
                 if (transaction.Type == TransactionType.StakingDividend)
                 {
                     stakeDividendsAsCrypto.Add(transaction.AssetAmount);
+                    Staking.AddDividend(transaction);
                 }
                 else if (transaction.Type == TransactionType.WalletToStaking)
                 {
@@ -107,14 +123,19 @@ namespace vergiFinance.FinanceFunctions
                     cryptoWallet.Add(amount);
                     stakeWallet.Subtract(amount);
 
+                    // If single spot -> staking -> spot, will be negative
                     var cumulativeDividends = stakeWallet.Amount * -1;
                     var currentPrice = _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate).Result;
+
+                    // Creating "fake" buy event. Staking rewards are appreciated based on current rate
                     buyHistory.Add(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker, 
                         cumulativeDividends, currentPrice, transaction.TradeDate));
 
                     var sale = new SalesUnitInformation(currentPrice, 0, cumulativeDividends, transaction);
                     _allSales.Add(sale);
                     stakeWithdrawalsEur.Add(currentPrice * cumulativeDividends);
+                    ContainsStakingWithdrawals = true;
+                    Staking.AddWithdrawal(transaction, currentPrice, cumulativeDividends);
                 }
                 else if (transaction.Type == TransactionType.Buy)
                 {
@@ -127,6 +148,7 @@ namespace vergiFinance.FinanceFunctions
                 {
                     fiat.Add(transaction.TotalPrice);
                     cryptoWallet.Subtract(transaction.AssetAmount);
+                    ContainsSellEvents = true;
                     
                     // Sold less than there exists in first buy
                     if (transaction.AssetAmount <= buyHistory.First().AssetAmount)
@@ -271,7 +293,7 @@ namespace vergiFinance.FinanceFunctions
 
         public IEnumerable<string> PrintProfitSales()
         {
-            var profitSales = _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year);
+            var profitSales = _allSales.Where(s => s.Type is SalesType.Profit or SalesType.StakingWithdrawal && s.TradeDate.Year == _year);
             return _printer.PrintProfitSales(profitSales);
         }
 
@@ -283,7 +305,7 @@ namespace vergiFinance.FinanceFunctions
         
         public decimal TotalProfit()
         {
-            return _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
+            return _allSales.Where(s => s.Type is SalesType.Profit or SalesType.StakingWithdrawal && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
         }
 
         public decimal TotalLoss()
@@ -302,7 +324,7 @@ namespace vergiFinance.FinanceFunctions
             var lossPurchases = lossList.Sum(s => s.BoughtTotalPrice);
             var lossSales = lossList.Sum(s => s.SoldTotalPrice);
 
-            var profitList = _allSales.Where(s => s.Type == SalesType.Profit).ToList();
+            var profitList = _allSales.Where(s => s.Type is SalesType.Profit or SalesType.StakingWithdrawal).ToList();
             var profitPurchases = profitList.Sum(s => s.BoughtTotalPrice);
             var profitSales = profitList.Sum(s => s.SoldTotalPrice);
 
@@ -313,7 +335,7 @@ namespace vergiFinance.FinanceFunctions
     public record TotalPurchasesAndSales(decimal lossPurchases, decimal lossSales, decimal profitPurchases,
         decimal profitSales);
 
-    public enum SalesType { Profit, Loss }
+    public enum SalesType { Profit, Loss, StakingWithdrawal }
 
     /// <summary>
     /// Contains full or partial transaction focusing on selling unit price
@@ -357,7 +379,11 @@ namespace vergiFinance.FinanceFunctions
         public SalesUnitInformation(decimal soldUnitPrice, decimal originalUnitPrice, decimal assetAmount, TransactionBase originalFullTransaction)
         {
             _originalFullTransaction = originalFullTransaction;
-            if (soldUnitPrice >= originalUnitPrice)
+            if (_originalFullTransaction.Type == TransactionType.StakingToWallet)
+            {
+                Type = SalesType.StakingWithdrawal;
+            }
+            else if (soldUnitPrice >= originalUnitPrice)
             {
                 Type = SalesType.Profit;
             }

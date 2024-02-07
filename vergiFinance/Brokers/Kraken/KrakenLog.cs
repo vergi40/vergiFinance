@@ -12,7 +12,6 @@ static class EventLogFactory
     {
         var eventLog = new KrakenLog();
         eventLog.ProcessRawTransactions(transactions);
-        eventLog.Sort();
         return eventLog;
     }
 }
@@ -29,36 +28,19 @@ class KrakenLog : IEventLog
     /// </summary>
     public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
 
-    /// <summary>
-    /// All transactions and types, separated for each ticker
-    /// </summary>
-    public Dictionary<string, List<TransactionBase>> TickerTransactions { get; } = new();
-
-    private IEnumerable<TransactionBase> GetBuySellTransactions() => Transactions
-        .Where(t => t.Type is TransactionType.Buy or TransactionType.Sell);
-
     public void ProcessRawTransactions(IReadOnlyList<RawTransaction> transactions)
     {
         var processer = new RawTransactionProcesser();
         Transactions = processer.ProcessRawTransactions(transactions);
 
-        // <ticker, ticker transactions>
-        foreach (var transaction in Transactions)
-        {
-            if (TickerTransactions.ContainsKey(transaction.Ticker))
-            {
-                TickerTransactions[transaction.Ticker].Add(transaction);
-            }
-            else
-            {
-                TickerTransactions.Add(transaction.Ticker, new List<TransactionBase>() { transaction });
-            }
-        }
+        Sort();
     }
 
     public ISalesCalculator CalculateSales(int year, string ticker, IPriceFetcher fetcher)
     {
-        var transactions = TickerTransactions[ticker].Where(t => t.TradeDate.Year <= year).ToList();
+        var data = new TickerOrganizer(Transactions, year);
+
+        var transactions = data.AllByTickerWithStaking[ticker].Where(t => t.TradeDate.Year <= year).ToList();
         var sales = SalesFactory.ProcessSalesAndTransfersForYear(transactions, year, fetcher);
         return sales;
     }
@@ -73,38 +55,16 @@ class KrakenLog : IEventLog
         var fiat = 'e';
         //var culture = CultureInfo.CurrentCulture;
         CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fi-FI");
+        var fetcher = new PriceFetcher();
 
+        var data = new TickerOrganizer(Transactions, year);
         // <ticker, ticker transactions>
-        var dict = new Dictionary<string, List<TransactionBase>>();
-        var dictAll = new Dictionary<string, List<TransactionBase>>();
-        foreach (var transaction in Transactions.Where(t => t.TradeDate.Year <= year))
-        {
-            if (dictAll.ContainsKey(transaction.Ticker))
-            {
-                dictAll[transaction.Ticker].Add(transaction);
-            }
-            else
-            {
-                dictAll.Add(transaction.Ticker, new List<TransactionBase>() { transaction });
-            }
-            // TODO how to combine normal+staked
-        }
-        foreach (var transaction in GetBuySellTransactions().Where(t => t.TradeDate.Year <= year))
-        {
-            if (dict.ContainsKey(transaction.Ticker))
-            {
-                dict[transaction.Ticker].Add(transaction);
-            }
-            else
-            {
-                dict.Add(transaction.Ticker, new List<TransactionBase>() { transaction });
-            }
-        }
+        var dictAll = data.AllByTickerWithStaking;
 
         // <ticker, transactions report>
         var transactionReport = new Dictionary<string, string>();
 
-        foreach (var entry in dict)
+        foreach (var entry in dictAll)
         {
             var eventsBuilder = new StringBuilder();
             eventsBuilder.AppendLine($"Transactions summary");
@@ -129,18 +89,28 @@ class KrakenLog : IEventLog
         messageBuilder.AppendLine($"Tax report for sales in {year}");
         messageBuilder.AppendLine("Individual listing for each ticker:");
 
-        foreach (var ticker in dict.Keys)
+        foreach (var ticker in dictAll.Keys)
         {
             messageBuilder.AppendLine("--------------------");
             messageBuilder.AppendLine($"Ticker: {ticker}");
 
-            //
+            // Transactions summary
             messageBuilder.Append(transactionReport[ticker]);
 
-            //
+            // Staking summary
+            var salesCalculator = SalesFactory.ProcessSalesAndTransfersForYear(dictAll[ticker], year, fetcher);
+            if (salesCalculator.Staking.HasEvents)
+            {
+                messageBuilder.AppendLine($"Staking recap");
+                messageBuilder.AppendLine($"{Separator}Staking rewards all time total: {salesCalculator.Staking.TotalDividends()}");
+                messageBuilder.AppendLine($"{Separator}Staking rewards moved to spot all time (taxable): {salesCalculator.Staking.TotalWithdrawals()}");
+                messageBuilder.AppendLine($"{Separator}Amount still in staking ({year}): WIP");
+                messageBuilder.AppendLine();
+            }
+
+            //Sales profit report
             messageBuilder.AppendLine($"Sales profit report");
 
-            var salesCalculator = SalesFactory.ProcessSalesForYear(dictAll[ticker], year);
             var profitSales = salesCalculator.PrintProfitSales().ToList();
             if (profitSales.Any())
             {
@@ -155,6 +125,7 @@ class KrakenLog : IEventLog
                 messageBuilder.AppendLine();
             }
 
+            // Sales loss report
             messageBuilder.AppendLine($"Sales loss report");
             var lossSales = salesCalculator.PrintLossSales().ToList();
             if (lossSales.Any())
@@ -232,7 +203,7 @@ class KrakenLog : IEventLog
 
     public List<int> TransactionYearSpan()
     {
-        var years = GetBuySellTransactions().Select(t => t.TradeDate.Year).Distinct().ToList();
+        var years = Transactions.Select(t => t.TradeDate.Year).Distinct().ToList();
         return years.OrderBy(y => y).ToList();
     }
 }

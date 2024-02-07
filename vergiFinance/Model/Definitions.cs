@@ -7,6 +7,7 @@ namespace vergiFinance.Model
     
     public interface ISalesCalculator : ITaxReportOperations
     {
+        StakingInfo Staking { get; }
         decimal TotalProfit();
         decimal TotalLoss();
         decimal TotalProfitLoss();
