@@ -28,7 +28,7 @@ namespace vergiFinance.Model
             return transaction;
         }
 
-        private static TransactionBase CreateBuy(FiatCurrency currency, string ticker, decimal assetAmount, decimal pricePerUnit, DateTime time)
+        public static TransactionBase CreateBuy(FiatCurrency currency, string ticker, decimal assetAmount, decimal pricePerUnit, DateTime time)
         {
             var transaction = new TransactionBase()
             {

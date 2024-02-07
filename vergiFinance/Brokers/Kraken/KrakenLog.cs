@@ -23,7 +23,16 @@ static class EventLogFactory
 class KrakenLog : IEventLog
 {
     private const string Separator = "   ";
+
+    /// <summary>
+    /// All transactions and types
+    /// </summary>
     public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
+
+    /// <summary>
+    /// All transactions and types, separated for each ticker
+    /// </summary>
+    public Dictionary<string, List<TransactionBase>> TickerTransactions { get; } = new();
 
     private IEnumerable<TransactionBase> GetBuySellTransactions() => Transactions
         .Where(t => t.Type is TransactionType.Buy or TransactionType.Sell);
@@ -32,6 +41,26 @@ class KrakenLog : IEventLog
     {
         var processer = new RawTransactionProcesser();
         Transactions = processer.ProcessRawTransactions(transactions);
+
+        // <ticker, ticker transactions>
+        foreach (var transaction in Transactions)
+        {
+            if (TickerTransactions.ContainsKey(transaction.Ticker))
+            {
+                TickerTransactions[transaction.Ticker].Add(transaction);
+            }
+            else
+            {
+                TickerTransactions.Add(transaction.Ticker, new List<TransactionBase>() { transaction });
+            }
+        }
+    }
+
+    public ISalesCalculator CalculateSales(int year, string ticker, IPriceFetcher fetcher)
+    {
+        var transactions = TickerTransactions[ticker].Where(t => t.TradeDate.Year <= year).ToList();
+        var sales = SalesFactory.ProcessSalesAndTransfersForYear(transactions, year, fetcher);
+        return sales;
     }
 
     /// <summary>
@@ -47,6 +76,19 @@ class KrakenLog : IEventLog
 
         // <ticker, ticker transactions>
         var dict = new Dictionary<string, List<TransactionBase>>();
+        var dictAll = new Dictionary<string, List<TransactionBase>>();
+        foreach (var transaction in Transactions.Where(t => t.TradeDate.Year <= year))
+        {
+            if (dictAll.ContainsKey(transaction.Ticker))
+            {
+                dictAll[transaction.Ticker].Add(transaction);
+            }
+            else
+            {
+                dictAll.Add(transaction.Ticker, new List<TransactionBase>() { transaction });
+            }
+            // TODO how to combine normal+staked
+        }
         foreach (var transaction in GetBuySellTransactions().Where(t => t.TradeDate.Year <= year))
         {
             if (dict.ContainsKey(transaction.Ticker))
@@ -97,7 +139,8 @@ class KrakenLog : IEventLog
 
             //
             messageBuilder.AppendLine($"Sales profit report");
-            var salesCalculator = SalesFactory.ProcessSalesForYear(dict[ticker], year);
+
+            var salesCalculator = SalesFactory.ProcessSalesForYear(dictAll[ticker], year);
             var profitSales = salesCalculator.PrintProfitSales().ToList();
             if (profitSales.Any())
             {

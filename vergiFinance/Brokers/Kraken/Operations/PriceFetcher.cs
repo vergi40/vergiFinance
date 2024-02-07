@@ -7,6 +7,15 @@ using vergiFinance.Persistence;
 
 namespace vergiFinance.Brokers.Kraken.Operations
 {
+    public interface IPriceFetcher
+    {
+        /// <summary>
+        /// HTTP Get single day price for given ticker.
+        /// https://www.coingecko.com/en/api
+        /// </summary>
+        Task<decimal> GetCoinPriceForDate(string ticker, DateTime date);
+    }
+
     public class PriceFetcher
     {
         /// <summary>
@@ -20,12 +29,16 @@ namespace vergiFinance.Brokers.Kraken.Operations
             {"ETH2", "ethereum"},
             {"ETH2.S", "ethereum"},
             {"ALGO", "algorand"},
-            {"ALGO.S", "algorand"}
+            {"ALGO.S", "algorand"},
+            {"TRX", "tron"},
+            {"TRX.S", "tron"},
         };
 
         private HttpClient _client { get; } = new HttpClient();
         private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
         private readonly Persistence.Persistence _stakingPersistence;
+
+        private readonly CultureInfo _culture = CultureInfo.GetCultureInfo("fi-FI");
 
         public PriceFetcher()
         {
@@ -90,8 +103,9 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
             var marketData = jObject["market_data"];
             var eurString = marketData["current_price"]["eur"].ToString();
-            // Gives decimal as 120,11
-            return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
+            // Gives decimal as 120,11 or 120.11
+            if(eurString.Contains('.')) return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
+            return Convert.ToDecimal(eurString, _culture);
         }
 
         public static List<CoinId> DeserializeCoinList(string jsonString)
