@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Transactions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using vergiFinance.Model;
@@ -18,29 +17,94 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
     public class PriceFetcher : IPriceFetcher
     {
-        /// <summary>
-        /// CoinGecko uses own id's
-        /// </summary>
-        private Dictionary<string, string> TickerToId { get; } = new()
-        {
-            {"XETH", "ethereum"},
-            {"ETH", "ethereum"},
-            {"ETH.S", "ethereum"},
-            {"ETH2", "ethereum"},
-            {"ETH2.S", "ethereum"},
-            {"ALGO", "algorand"},
-            {"ALGO.S", "algorand"},
-            {"TRX", "tron"},
-            {"TRX.S", "tron"},
-        };
+        private HttpClient _client { get; } = new HttpClient();
+        private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
 
+        private readonly CultureInfo _culture = CultureInfo.GetCultureInfo("fi-FI");
+
+        /// <summary>
+        /// NOTE: Not good design to update one property in mutable items. But for PoC it'll do
+        /// </summary>
+        /// <param name="stakingRewards"></param>
+        /// <returns></returns>
+        public async Task FillDayUnitPrice(List<TransactionBase> stakingRewards)
+        {
+            foreach (var transaction in stakingRewards)
+            {
+                Console.WriteLine($"Fetching price for {transaction.Ticker} at {transaction.TradeDate}...");
+
+                try
+                {
+                    var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
+                    transaction.DayUnitPrice = priceAtDate;
+                }
+                catch (HttpRequestException e)
+                {
+                    // TODO log
+                    // Commonly throws when too many requests
+                    Console.WriteLine(e.ToString());
+                    throw;
+                }
+
+                Console.WriteLine($"Success [from http api]: {transaction.DayUnitPrice:G6}e");
+            }
+        }
+
+        public async Task<decimal> GetCoinPriceForDate(string ticker, DateTime date)
+        {
+            var id = CoinGeckoConstants.TickerToId[ticker];
+
+            // https://api.coingecko.com/api/v3/coins/ethereum/history
+            var req = _urlBase + $"coins/{id}/history?date={date.Date:dd-MM-yyyy}";
+
+            var response = await _client.GetAsync(req);
+            response.EnsureSuccessStatusCode();
+            await Task.Delay(500);
+            return DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
+        }
+
+        public decimal DeserializeCoinMarketData(string jsonString)
+        {
+            // https://www.newtonsoft.com/json/help/html/SerializingJSONFragments.htm
+            var jObject = JObject.Parse(jsonString);
+
+            var marketData = jObject["market_data"];
+            var eurString = marketData["current_price"]["eur"].ToString();
+            // Gives decimal as 120,11 or 120.11
+            if(eurString.Contains('.')) return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
+            return Convert.ToDecimal(eurString, _culture);
+        }
+
+        public static List<CoinId> DeserializeCoinList(string jsonString)
+        {
+            var arrays = JArray.Parse(jsonString);
+
+            var result = new List<CoinId>();
+            foreach (var array in arrays)
+            {
+                var coin = JsonConvert.DeserializeObject<CoinId>(array.ToString());
+                result.Add(coin);
+            }
+
+            var eth = result.FirstOrDefault(r => r.id.Equals("ethereum", StringComparison.InvariantCultureIgnoreCase));
+            var algo = result.FirstOrDefault(r => r.id.Equals("algorand", StringComparison.InvariantCultureIgnoreCase));
+
+            var eths = result.Where(r => r.name.Contains("ethereum", StringComparison.InvariantCultureIgnoreCase))
+                .ToList();
+
+            return result;
+        }
+    }
+
+    public class PriceFetcherWithPersistence : IPriceFetcher
+    {
         private HttpClient _client { get; } = new HttpClient();
         private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
         private readonly Persistence.Persistence _stakingPersistence;
 
         private readonly CultureInfo _culture = CultureInfo.GetCultureInfo("fi-FI");
 
-        public PriceFetcher()
+        public PriceFetcherWithPersistence()
         {
             _stakingPersistence = new Persistence.Persistence(new DatabaseLite());
         }
@@ -86,15 +150,38 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
         public async Task<decimal> GetCoinPriceForDate(string ticker, DateTime date)
         {
-            var id = TickerToId[ticker];
+            // See if already persisted
+            if (_stakingPersistence.TryLoadSingleStakingData(ticker, date.Date,
+                    out var existingDto))
+            {
+                var dayUnitPrice = existingDto.DayUnitPrice;
+
+                Console.WriteLine($"Success [from db]: {existingDto.DayUnitPrice:G6}e");
+                return dayUnitPrice;
+            }
+
+            var id = CoinGeckoConstants.TickerToId[ticker];
 
             // https://api.coingecko.com/api/v3/coins/ethereum/history
             var req = _urlBase + $"coins/{id}/history?date={date.Date:dd-MM-yyyy}";
 
             var response = await _client.GetAsync(req);
             response.EnsureSuccessStatusCode();
+
+            
+            var unitPrice = DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
             await Task.Delay(500);
-            return DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
+
+            var dto = new StakingDto()
+            {
+                DayUnitPrice = unitPrice,
+                BrokerId = "",
+                Ticker = ticker,
+                TradeDate = date.Date
+            };
+
+            _stakingPersistence.SaveSingleStakingData(dto);
+            return unitPrice;
         }
 
         public decimal DeserializeCoinMarketData(string jsonString)
@@ -105,7 +192,7 @@ namespace vergiFinance.Brokers.Kraken.Operations
             var marketData = jObject["market_data"];
             var eurString = marketData["current_price"]["eur"].ToString();
             // Gives decimal as 120,11 or 120.11
-            if(eurString.Contains('.')) return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
+            if (eurString.Contains('.')) return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
             return Convert.ToDecimal(eurString, _culture);
         }
 
@@ -153,4 +240,26 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
     public record CoinId(string id, string symbol, string name);
 
+    public static class CoinGeckoConstants
+    {
+        /// <summary>
+        /// CoinGecko uses own id's
+        /// </summary>
+        public static Dictionary<string, string> TickerToId { get; } = new()
+        {
+            {"XETH", "ethereum"},
+            {"ETH", "ethereum"},
+            {"ETH.S", "ethereum"},
+            {"ETH2", "ethereum"},
+            {"ETH2.S", "ethereum"},
+            {"ALGO", "algorand"},
+            {"ALGO.S", "algorand"},
+            {"TRX", "tron"},
+            {"TRX.S", "tron"},
+            {"ADA", "ada"},
+            {"ADA.S", "ada"},
+            {"XTZ", "tezos"},
+            {"XTZ.S", "tezos"},
+        };
+    }
 }

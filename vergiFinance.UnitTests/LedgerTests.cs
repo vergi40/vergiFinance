@@ -53,7 +53,7 @@ namespace vergiFinance.UnitTests
         [Test]
         public async Task FetchTickerPriceTest()
         {
-            var fetcher = new PriceFetcher();
+            var fetcher = new PriceFetcherWithPersistence();
             var result = await fetcher.GetCoinPriceForDate("TRX", new DateTime(2022, 5, 31));
 
             result.ShouldBe(0.077m, 0.001m);

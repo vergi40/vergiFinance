@@ -55,7 +55,7 @@ class KrakenLog : IEventLog
         var fiat = 'e';
         //var culture = CultureInfo.CurrentCulture;
         CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fi-FI");
-        var fetcher = new PriceFetcher();
+        var fetcher = new PriceFetcherWithPersistence();
 
         var data = new TickerOrganizer(Transactions, year);
         // <ticker, ticker transactions>
