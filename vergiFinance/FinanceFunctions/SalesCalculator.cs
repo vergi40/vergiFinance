@@ -7,22 +7,22 @@ namespace vergiFinance.FinanceFunctions
     {
         /// <summary>
         /// Create sales calculator and process transactions for a year.
-        /// After this the calculator can be used to fetch profits and prints
+        /// After this the result can be used to fetch profits and prints
         /// </summary>
-        public static ISalesCalculator ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
+        public static ISalesResult ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
         {
-            var sales = new SalesCalculator(year, SalesPrinterFactory.CreateEng());
-            sales.CalculateCumulativeSales(allTransactionsForTicker);
+            var calculator = new SalesCalculator(year);
+            var sales = calculator.CalculateCumulativeSales(allTransactionsForTicker);
             return sales;
         }
 
         /// <summary>
         /// Create sales calculator and process transactions and staking transfers for a year.
         /// </summary>
-        public static ISalesCalculator ProcessSalesAndTransfersForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
+        public static ISalesResult ProcessSalesAndStakingForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
         {
-            var sales = new SalesCalculator(year, SalesPrinterFactory.CreateEng(), fetcher);
-            sales.CalculateCumulativeSalesAndTransfers(allTransactionsForTicker);
+            var calculator = new SalesCalculator(year, fetcher);
+            var sales = calculator.CalculateCumulativeSalesWithStaking(allTransactionsForTicker);
             return sales;
         }
     }
@@ -31,7 +31,6 @@ namespace vergiFinance.FinanceFunctions
     {
         private List<SalesUnitInformation> _allSales { get; }
         private int _year { get; }
-        private SalesPrinter _printer { get; }
         private IPriceFetcher? _fetcher { get; }
 
         public string Ticker { get; private set; } = "null";
@@ -47,19 +46,17 @@ namespace vergiFinance.FinanceFunctions
 
         public StakingInfo Staking { get; } = new();
         
-        public SalesCalculator(int year, SalesPrinter salesPrinter)
+        public SalesCalculator(int year)
         {
             _year = year;
             _allSales = new();
-            _printer = salesPrinter;
             _fetcher = null;
         }
 
-        public SalesCalculator(int year, SalesPrinter salesPrinter, IPriceFetcher fetcher)
+        public SalesCalculator(int year, IPriceFetcher fetcher)
         {
             _year = year;
             _allSales = new();
-            _printer = salesPrinter;
             _fetcher = fetcher;
         }
 
@@ -88,7 +85,7 @@ namespace vergiFinance.FinanceFunctions
         /// Prerequisite: All transactions are same ticker. Types are filtered
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public void CalculateCumulativeSalesAndTransfers(List<TransactionBase> transactions)
+        public ISalesResult CalculateCumulativeSalesWithStaking(List<TransactionBase> transactions)
         { 
             if (_fetcher == null) throw new InvalidOperationException("Logical error");
             _allSales.Clear();
@@ -212,13 +209,15 @@ namespace vergiFinance.FinanceFunctions
                 //    throw new InvalidOperationException("Data error");
                 //}
             }
+
+            return new SalesResult(_allSales, _year, Staking);
         }
 
         /// <summary>
         /// Prerequisite: All transactions are same ticker. Only buy or sell types
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public void CalculateCumulativeSales(List<TransactionBase> transactions)
+        public ISalesResult CalculateCumulativeSales(List<TransactionBase> transactions)
         {
             _allSales.Clear();
             // Examples
@@ -289,46 +288,8 @@ namespace vergiFinance.FinanceFunctions
                     }
                 }
             }
-        }
 
-        public IEnumerable<string> PrintProfitSales()
-        {
-            var profitSales = _allSales.Where(s => s.Type is SalesType.Profit or SalesType.StakingWithdrawal && s.TradeDate.Year == _year);
-            return _printer.PrintProfitSales(profitSales);
-        }
-
-        public IEnumerable<string> PrintLossSales()
-        {
-            var lossSales = _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year);
-            return _printer.PrintLossSales(lossSales);
-        }
-        
-        public decimal TotalProfit()
-        {
-            return _allSales.Where(s => s.Type is SalesType.Profit or SalesType.StakingWithdrawal && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public decimal TotalLoss()
-        {
-            return _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public decimal TotalProfitLoss()
-        {
-            return _allSales.Where(s => s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public TotalPurchasesAndSales CalculateTotalPurchasesAndSales()
-        {
-            var lossList = _allSales.Where(s => s.Type == SalesType.Loss).ToList();
-            var lossPurchases = lossList.Sum(s => s.BoughtTotalPrice);
-            var lossSales = lossList.Sum(s => s.SoldTotalPrice);
-
-            var profitList = _allSales.Where(s => s.Type is SalesType.Profit or SalesType.StakingWithdrawal).ToList();
-            var profitPurchases = profitList.Sum(s => s.BoughtTotalPrice);
-            var profitSales = profitList.Sum(s => s.SoldTotalPrice);
-
-            return new TotalPurchasesAndSales(lossPurchases, lossSales, profitPurchases, profitSales);
+            return new SalesResult(_allSales, _year);
         }
     }
 

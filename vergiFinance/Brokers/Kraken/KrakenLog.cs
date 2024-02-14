@@ -36,12 +36,12 @@ class KrakenLog : IEventLog
         Sort();
     }
 
-    public ISalesCalculator CalculateSales(int year, string ticker, IPriceFetcher fetcher)
+    public ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher)
     {
         var data = new TickerOrganizer(Transactions, year);
 
         var transactions = data.AllByTickerWithStaking[ticker].Where(t => t.TradeDate.Year <= year).ToList();
-        var sales = SalesFactory.ProcessSalesAndTransfersForYear(transactions, year, fetcher);
+        var sales = SalesFactory.ProcessSalesAndStakingForYear(transactions, year, fetcher);
         return sales;
     }
 
@@ -98,7 +98,7 @@ class KrakenLog : IEventLog
             messageBuilder.Append(transactionReport[ticker]);
 
             // Staking summary
-            var salesCalculator = SalesFactory.ProcessSalesAndTransfersForYear(dictAll[ticker], year, fetcher);
+            var salesCalculator = SalesFactory.ProcessSalesAndStakingForYear(dictAll[ticker], year, fetcher);
             if (salesCalculator.Staking.HasEvents)
             {
                 messageBuilder.AppendLine($"Staking recap");

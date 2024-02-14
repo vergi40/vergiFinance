@@ -19,7 +19,7 @@ namespace vergiFinance
     {
         List<TransactionBase> Transactions { get; set; }
 
-        ISalesCalculator CalculateSales(int year, string ticker, IPriceFetcher fetcher);
+        ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher);
 
         /// <summary>
         /// List all transactions. Print all sale events for given year. Give

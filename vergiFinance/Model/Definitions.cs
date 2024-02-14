@@ -5,7 +5,12 @@ namespace vergiFinance.Model
 {
     // OPERATORS
     
-    public interface ISalesCalculator : ITaxReportOperations
+    public interface ISalesCalculator
+    {
+        StakingInfo Staking { get; }
+    }
+
+    public interface ISalesResult : ITaxReportOperations
     {
         StakingInfo Staking { get; }
         decimal TotalProfit();

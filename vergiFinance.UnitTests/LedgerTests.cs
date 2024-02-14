@@ -34,7 +34,7 @@ namespace vergiFinance.UnitTests
             var sales = events.CalculateSales(2022, "TRX", _fetcher.Object);
 
             var profitLoss = sales.TotalProfitLoss();
-            profitLoss.ShouldBe(356.04m, 0.001m);
+            profitLoss.ShouldBe(356.042m, 0.001m);
             //var report = events.PrintExtendedTaxReport(2022);
 
             // StakedFromSpot -> StakedToEarn 11,286.681715TRX, balance 0.00000058TRX
@@ -52,6 +52,16 @@ namespace vergiFinance.UnitTests
         [Explicit("Not meant for unit testing")]
         [Test]
         public async Task FetchTickerPriceTest()
+        {
+            var fetcher = new PriceFetcher();
+            var result = await fetcher.GetCoinPriceForDate("TRX", new DateTime(2022, 5, 31));
+
+            result.ShouldBe(0.077m, 0.001m);
+        }
+
+        [Explicit("Not meant for unit testing")]
+        [Test]
+        public async Task FetchTickerPriceFromPersistenceTest()
         {
             var fetcher = new PriceFetcherWithPersistence();
             var result = await fetcher.GetCoinPriceForDate("TRX", new DateTime(2022, 5, 31));
