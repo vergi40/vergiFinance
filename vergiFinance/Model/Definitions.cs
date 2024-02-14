@@ -19,6 +19,38 @@ namespace vergiFinance.Model
         TotalPurchasesAndSales CalculateTotalPurchasesAndSales();
     }
 
+    public interface IAllHoldingsResult
+    {
+        IReadOnlyList<IHoldingsResult> AllHoldings { get; }
+        IReadOnlyDictionary<string, List<IHoldingsResult>> AllHoldingsByTicker { get; }
+    }
+
+    public interface IHoldingsResult
+    {
+        /// <summary>
+        /// NOK, NVDA, ETH, 
+        /// </summary>
+        public string Ticker { get; }
+
+        /// <summary>
+        /// Amount of units under control. Non-negative.
+        /// Kpl määrä. Esim 8 kpl osakkeita. 0.001 kpl kryptoa
+        /// </summary>
+        public decimal AssetAmountInWallet { get; }
+
+        /// <summary>
+        /// Amount of units, locked in staking. Non-negative.
+        /// Kpl määrä. Esim 8 kpl osakkeita. 0.001 kpl kryptoa
+        /// </summary>
+        public decimal AssetAmountStaked { get; }
+
+        /// <summary>
+        /// Total amount of units. Non-negative.
+        /// Kpl määrä. Esim 8 kpl osakkeita. 0.001 kpl kryptoa
+        /// </summary>
+        public decimal AssetAmountTotal { get; }
+    }
+
     public interface ITaxReportOperations
     {
         IEnumerable<string> PrintProfitSales();

@@ -22,6 +22,16 @@ namespace vergiFinance
         ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher);
 
         /// <summary>
+        /// Single ticker holdings at given time
+        /// </summary>
+        IHoldingsResult CalculateHoldings(DateTime pointInTime, string ticker);
+
+        /// <summary>
+        /// All holdings at given time
+        /// </summary>
+        IAllHoldingsResult CalculateAllHoldings(DateTime pointInTime);
+
+        /// <summary>
         /// List all transactions. Print all sale events for given year. Give
         /// details individually for sales with profit and loss.
         /// </summary>

@@ -206,4 +206,42 @@ class KrakenLog : IEventLog
         var years = Transactions.Select(t => t.TradeDate.Year).Distinct().ToList();
         return years.OrderBy(y => y).ToList();
     }
+
+    public IAllHoldingsResult CalculateAllHoldings(DateTime pointInTime)
+    {
+        var dataAll = new TickerOrganizer(Transactions, pointInTime);
+        var dictAll = dataAll.AllByTickerWithStaking;
+
+        var holdings = new List<IHoldingsResult>();
+        foreach (var key in dictAll.Keys)
+        {
+            var holding = CalculateHoldings(pointInTime, key);
+            holdings.Add(holding);
+        }
+
+        return new AllHoldingsResult(holdings);
+    }
+
+    public IHoldingsResult CalculateHoldings(DateTime pointInTime, string ticker)
+    {
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fi-FI");
+
+        var dataAll = new TickerOrganizer(Transactions, pointInTime);
+        var dictAll = dataAll.AllByTicker;
+
+        var calculator = new HoldingsCalculator();
+
+        // TODO more weird holdings like ETH
+        if (dictAll.ContainsKey($"{ticker}.S"))
+        {
+            var transactions = dictAll[ticker]
+                .Concat(dictAll[$"{ticker}.S"])
+                .OrderBy(t => t.TradeDate)
+                .ToList();
+            return calculator.CalculateHoldingsWithStaking( ticker, transactions);
+        }
+        return calculator.CalculateHoldings(ticker, dictAll[ticker]);
+    }
+
+    
 }
