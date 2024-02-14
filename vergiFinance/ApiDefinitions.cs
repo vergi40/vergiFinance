@@ -1,4 +1,5 @@
-﻿using vergiFinance.Model;
+﻿using vergiFinance.Brokers.Kraken.Operations;
+using vergiFinance.Model;
 // ReSharper disable CommentTypo
 
 namespace vergiFinance
@@ -17,6 +18,8 @@ namespace vergiFinance
     public interface IEventLog
     {
         List<TransactionBase> Transactions { get; set; }
+
+        ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher);
 
         /// <summary>
         /// List all transactions. Print all sale events for given year. Give

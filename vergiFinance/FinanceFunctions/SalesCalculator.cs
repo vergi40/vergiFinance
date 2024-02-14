@@ -1,4 +1,5 @@
-﻿using vergiFinance.Model;
+﻿using vergiFinance.Brokers.Kraken.Operations;
+using vergiFinance.Model;
 
 namespace vergiFinance.FinanceFunctions
 {
@@ -6,15 +7,22 @@ namespace vergiFinance.FinanceFunctions
     {
         /// <summary>
         /// Create sales calculator and process transactions for a year.
-        /// After this the calculator can be used to fetch profits and prints
+        /// After this the result can be used to fetch profits and prints
         /// </summary>
-        /// <param name="allTransactionsForTicker"></param>
-        /// <param name="year"></param>
-        /// <returns></returns>
-        public static ISalesCalculator ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
+        public static ISalesResult ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
         {
-            var sales = new SalesCalculator(year, SalesPrinterFactory.CreateEng());
-            sales.CalculateCumulativeSales(allTransactionsForTicker);
+            var calculator = new SalesCalculator(year);
+            var sales = calculator.CalculateCumulativeSales(allTransactionsForTicker);
+            return sales;
+        }
+
+        /// <summary>
+        /// Create sales calculator and process transactions and staking transfers for a year.
+        /// </summary>
+        public static ISalesResult ProcessSalesAndStakingForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
+        {
+            var calculator = new SalesCalculator(year, fetcher);
+            var sales = calculator.CalculateCumulativeSalesWithStaking(allTransactionsForTicker);
             return sales;
         }
     }
@@ -23,20 +31,193 @@ namespace vergiFinance.FinanceFunctions
     {
         private List<SalesUnitInformation> _allSales { get; }
         private int _year { get; }
-        private SalesPrinter _printer { get; }
+        private IPriceFetcher? _fetcher { get; }
+
+        public string Ticker { get; private set; } = "null";
+
+        /// <summary>
+        /// Tax implications
+        /// </summary>
+        public bool ContainsSellEvents { get; private set; }
+        /// <summary>
+        /// Tax implications
+        /// </summary>
+        public bool ContainsStakingWithdrawals { get; private set; }
+
+        public StakingInfo Staking { get; } = new();
         
-        public SalesCalculator(int year, SalesPrinter salesPrinter)
+        public SalesCalculator(int year)
         {
             _year = year;
             _allSales = new();
-            _printer = salesPrinter;
+            _fetcher = null;
+        }
+
+        public SalesCalculator(int year, IPriceFetcher fetcher)
+        {
+            _year = year;
+            _allSales = new();
+            _fetcher = fetcher;
+        }
+
+        /// <summary>
+        /// Buy, sell, to staking, from staking
+        /// </summary>
+        private IEnumerable<TransactionBase> GetTransactionsForTaxCalculations(
+            IEnumerable<TransactionBase> transactions)
+        {
+            return transactions
+                .Where(t => t.Type is
+                    TransactionType.Buy or TransactionType.Sell or
+                    TransactionType.WalletToStaking or TransactionType.StakingToWallet or
+                    TransactionType.StakingDividend);
+        }
+
+        private IEnumerable<TransactionBase> GetBuySellTransactions(
+            IEnumerable<TransactionBase> transactions)
+        {
+            return transactions
+                .Where(t => t.Type is
+                    TransactionType.Buy or TransactionType.Sell);
+        }
+
+        /// <summary>
+        /// Prerequisite: All transactions are same ticker. Types are filtered
+        /// </summary>
+        /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
+        public ISalesResult CalculateCumulativeSalesWithStaking(List<TransactionBase> transactions)
+        { 
+            if (_fetcher == null) throw new InvalidOperationException("Logical error");
+            _allSales.Clear();
+            if (transactions.Any()) Ticker = transactions[0].Ticker;
+
+
+            var totalProfit = 0m;
+            var buyHistory = new List<TransactionBase>();
+
+            var fiat = new Account();
+            var stakeWallet = new Account();
+            var stakeWithdrawalsEur = new Account();
+            var stakeDividendsAsCrypto = new Account();
+            var cryptoWallet = new Account();
+
+            foreach (var transaction in GetTransactionsForTaxCalculations(transactions))
+            {
+                if (transaction.Type == TransactionType.StakingDividend)
+                {
+                    stakeDividendsAsCrypto.Add(transaction.AssetAmount);
+                    Staking.AddDividend(transaction);
+                }
+                else if (transaction.Type == TransactionType.WalletToStaking)
+                {
+                    var amount = transaction.AssetAmount;
+                    cryptoWallet.Subtract(amount);
+                    stakeWallet.Add(amount);
+                }
+                else if (transaction.Type == TransactionType.StakingToWallet)
+                {
+                    var amount = transaction.AssetAmount;
+                    cryptoWallet.Add(amount);
+                    stakeWallet.Subtract(amount);
+
+                    // If single spot -> staking -> spot, will be negative
+                    var cumulativeDividends = stakeWallet.Amount * -1;
+                    var currentPrice = _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate).Result;
+
+                    // Creating "fake" buy event. Staking rewards are appreciated based on current rate
+                    buyHistory.Add(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker, 
+                        cumulativeDividends, currentPrice, transaction.TradeDate));
+
+                    var sale = new SalesUnitInformation(currentPrice, 0, cumulativeDividends, transaction);
+                    _allSales.Add(sale);
+                    stakeWithdrawalsEur.Add(currentPrice * cumulativeDividends);
+                    ContainsStakingWithdrawals = true;
+                    Staking.AddWithdrawal(transaction, currentPrice, cumulativeDividends);
+                }
+                else if (transaction.Type == TransactionType.Buy)
+                {
+                    fiat.Subtract(transaction.TotalPrice);
+                    cryptoWallet.Add(transaction.AssetAmount);
+                    
+                    buyHistory.Add(transaction.DeepCopy());
+                }
+                else if (transaction.Type == TransactionType.Sell)
+                {
+                    fiat.Add(transaction.TotalPrice);
+                    cryptoWallet.Subtract(transaction.AssetAmount);
+                    ContainsSellEvents = true;
+                    
+                    // Sold less than there exists in first buy
+                    if (transaction.AssetAmount <= buyHistory.First().AssetAmount)
+                    {
+                        var buy = buyHistory.First();
+                        buy.AssetAmount -= transaction.AssetAmount;
+                        var profit = (transaction.AssetUnitPrice - buy.AssetUnitPrice) * transaction.AssetAmount;
+
+                        // 
+                        var sale = new SalesUnitInformation(transaction.AssetUnitPrice, buy.AssetUnitPrice, transaction.AssetAmount, transaction);
+                        _allSales.Add(sale);
+
+                        totalProfit += profit;
+                        if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
+                    }
+                    // Iterate buy list until asset amount is subtracted
+                    else
+                    {
+                        var assetAmount = transaction.AssetAmount;
+                        var counter = 0;
+                        while (Math.Abs(assetAmount) >= 1e-6m)
+                        {
+                            if (!buyHistory.Any())
+                            {
+                                throw new ArgumentException($"Failed to calculate: there are more sell-units than buy-units. " +
+                                                            $"Current transaction in iteration: {transaction}");
+                            }
+
+                            var buy = buyHistory.First();
+                            var maxReduce = Math.Min(Math.Abs(buy.AssetAmount), assetAmount);
+
+                            assetAmount -= maxReduce;
+                            buy.AssetAmount -= maxReduce;
+                            var profit = (transaction.AssetUnitPrice - buy.AssetUnitPrice) * maxReduce;
+
+                            // 
+                            var sale = new SalesUnitInformation(transaction.AssetUnitPrice, buy.AssetUnitPrice, maxReduce, transaction);
+                            _allSales.Add(sale);
+
+                            totalProfit += profit;
+                            if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
+
+                            counter++;
+                            if (counter > 50)
+                            {
+                                throw new ArgumentException($"Failed to calculate, invalid data (iteration counter reached: {counter}). " +
+                                                            $"Current transaction in iteration: {transaction}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (stakeWithdrawalsEur.Amount > 0)
+            {
+                // Assert that wallets match. totalProfit doesn't include staking income
+                var fiatProfit = fiat.Amount;
+                var debug = stakeWithdrawalsEur.Amount + totalProfit - fiatProfit;
+                //if (Math.Abs(stakeWithdrawalsEur.Amount + totalProfit - fiatProfit) > 0.1m)
+                //{
+                //    throw new InvalidOperationException("Data error");
+                //}
+            }
+
+            return new SalesResult(_allSales, _year, Staking);
         }
 
         /// <summary>
         /// Prerequisite: All transactions are same ticker. Only buy or sell types
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public void CalculateCumulativeSales(List<TransactionBase> transactions)
+        public ISalesResult CalculateCumulativeSales(List<TransactionBase> transactions)
         {
             _allSales.Clear();
             // Examples
@@ -48,7 +229,7 @@ namespace vergiFinance.FinanceFunctions
 
             var totalProfit = 0m;
             var buyHistory = new List<TransactionBase>();
-            foreach (var transaction in transactions)
+            foreach (var transaction in GetBuySellTransactions(transactions))
             {
                 if (transaction.Type == TransactionType.Buy)
                 {
@@ -107,53 +288,15 @@ namespace vergiFinance.FinanceFunctions
                     }
                 }
             }
-        }
 
-        public IEnumerable<string> PrintProfitSales()
-        {
-            var profitSales = _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year);
-            return _printer.PrintProfitSales(profitSales);
-        }
-
-        public IEnumerable<string> PrintLossSales()
-        {
-            var lossSales = _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year);
-            return _printer.PrintLossSales(lossSales);
-        }
-        
-        public decimal TotalProfit()
-        {
-            return _allSales.Where(s => s.Type == SalesType.Profit && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public decimal TotalLoss()
-        {
-            return _allSales.Where(s => s.Type == SalesType.Loss && s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public decimal TotalProfitLoss()
-        {
-            return _allSales.Where(s => s.TradeDate.Year == _year).Sum(s => s.ProfitLoss);
-        }
-
-        public TotalPurchasesAndSales CalculateTotalPurchasesAndSales()
-        {
-            var lossList = _allSales.Where(s => s.Type == SalesType.Loss).ToList();
-            var lossPurchases = lossList.Sum(s => s.BoughtTotalPrice);
-            var lossSales = lossList.Sum(s => s.SoldTotalPrice);
-
-            var profitList = _allSales.Where(s => s.Type == SalesType.Profit).ToList();
-            var profitPurchases = profitList.Sum(s => s.BoughtTotalPrice);
-            var profitSales = profitList.Sum(s => s.SoldTotalPrice);
-
-            return new TotalPurchasesAndSales(lossPurchases, lossSales, profitPurchases, profitSales);
+            return new SalesResult(_allSales, _year);
         }
     }
 
     public record TotalPurchasesAndSales(decimal lossPurchases, decimal lossSales, decimal profitPurchases,
         decimal profitSales);
 
-    public enum SalesType { Profit, Loss }
+    public enum SalesType { Profit, Loss, StakingWithdrawal }
 
     /// <summary>
     /// Contains full or partial transaction focusing on selling unit price
@@ -197,7 +340,11 @@ namespace vergiFinance.FinanceFunctions
         public SalesUnitInformation(decimal soldUnitPrice, decimal originalUnitPrice, decimal assetAmount, TransactionBase originalFullTransaction)
         {
             _originalFullTransaction = originalFullTransaction;
-            if (soldUnitPrice >= originalUnitPrice)
+            if (_originalFullTransaction.Type == TransactionType.StakingToWallet)
+            {
+                Type = SalesType.StakingWithdrawal;
+            }
+            else if (soldUnitPrice >= originalUnitPrice)
             {
                 Type = SalesType.Profit;
             }

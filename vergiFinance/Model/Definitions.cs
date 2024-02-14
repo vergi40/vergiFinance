@@ -5,8 +5,14 @@ namespace vergiFinance.Model
 {
     // OPERATORS
     
-    public interface ISalesCalculator : ITaxReportOperations
+    public interface ISalesCalculator
     {
+        StakingInfo Staking { get; }
+    }
+
+    public interface ISalesResult : ITaxReportOperations
+    {
+        StakingInfo Staking { get; }
         decimal TotalProfit();
         decimal TotalLoss();
         decimal TotalProfitLoss();
@@ -35,6 +41,11 @@ namespace vergiFinance.Model
     public enum TransactionType
     {
         /// <summary>
+        /// Uninitialized, error
+        /// </summary>
+        Noop,
+
+        /// <summary>
         /// Move fiat money from bank to shares account 
         /// </summary>
         Deposit,
@@ -51,7 +62,19 @@ namespace vergiFinance.Model
         Sell,
 
         /// <summary>
-        /// Move cryptos from wallet to proof-of-stake
+        /// Two step. Crypto taken from crypto wallet. Crypto.S arrives to staking wallet.
+        /// Asset name supplied without ".S"
+        /// </summary>
+        WalletToStaking,
+
+        /// <summary>
+        /// Tax implications. Two step. Crypto.S taken from staking wallet. Crypto arrives to crypto wallet.
+        /// Asset name supplied without ".S"
+        /// </summary>
+        StakingToWallet,
+
+        /// <summary>
+        /// Move cryptos from crypto wallet to proof-of-stake
         /// </summary>
         StakingWithdrawal,
 
@@ -61,12 +84,12 @@ namespace vergiFinance.Model
         StakingDeposit,
 
         /// <summary>
-        /// 
+        /// Placeholder - duplicate to StakingDividend
         /// </summary>
         StakingOperation,
 
         /// <summary>
-        /// Receive crypto earnings from staking
+        /// Receive crypto earnings from staking to staking wallet
         /// </summary>
         StakingDividend,
 

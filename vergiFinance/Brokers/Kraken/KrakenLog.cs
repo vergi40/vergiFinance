@@ -12,7 +12,6 @@ static class EventLogFactory
     {
         var eventLog = new KrakenLog();
         eventLog.ProcessRawTransactions(transactions);
-        eventLog.Sort();
         return eventLog;
     }
 }
@@ -23,103 +22,27 @@ static class EventLogFactory
 class KrakenLog : IEventLog
 {
     private const string Separator = "   ";
-    public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
 
-    private IEnumerable<TransactionBase> GetBuySellTransactions() => Transactions
-        .Where(t => t.Type is TransactionType.Buy or TransactionType.Sell);
+    /// <summary>
+    /// All transactions and types
+    /// </summary>
+    public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
 
     public void ProcessRawTransactions(IReadOnlyList<RawTransaction> transactions)
     {
-        var (singles, pairs) = CombineTransactions(transactions);
+        var processer = new RawTransactionProcesser();
+        Transactions = processer.ProcessRawTransactions(transactions);
 
-        // 2x withdrawal for bank - kraken transactions
-        // withdrawal+transfer for staking
-
-        // 2x deposit for bank - kraken transactions
-        // deposit+transfer for staking
-
-        // staking - has unique deposit and unique staking event
-        //   deposit currency != ZEUR
-
-        foreach (var singleEvent in singles)
-        {
-            if (singleEvent.TypeAsString == "staking")
-            {
-                Transactions.Add(TransactionFactory.Create(TransactionType.StakingOperation, FiatCurrency.Eur, singleEvent.Asset,
-                    Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
-            }
-            else if (singleEvent.TypeAsString == "deposit")
-            {
-                Transactions.Add(TransactionFactory.Create(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
-                    Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
-            }
-            else
-            {
-                throw new NotImplementedException($"Type {singleEvent.TypeAsString} transaction not implemented");
-            }
-        }
-
-        foreach (var pair in pairs)
-        {
-            var (item1, item2) = pair;
-            var info = new TupleTransaction(item1, item2);
-            if (info.DepositCount == 2)
-            {
-                Transactions.Add(TransactionFactory.Create(TransactionType.Deposit, FiatCurrency.Eur, "",
-                    Math.Abs(item1.Amount), 1m, item1.Time));
-            }
-            else if (info.WithdrawalCount == 2)
-            {
-                Transactions.Add(TransactionFactory.Create(TransactionType.Withdrawal, FiatCurrency.Eur, "",
-                    Math.Abs(item1.Amount), 1m, item1.Time));
-            }
-            else if (info.IsTransfer)
-            {
-                if (info.WithdrawalCount == 1)
-                {
-                    Transactions.Add(TransactionFactory.CreateStakingTransfer(TransactionType.StakingWithdrawal, item1, item2));
-                }
-                else if (info.DepositCount == 1)
-                {
-                    Transactions.Add(TransactionFactory.CreateStakingTransfer(TransactionType.StakingDeposit, item1, item2));
-                }
-            }
-            else if (info.IsTrade)
-            {
-                Transactions.Add(TransactionFactory.CreateKrakenTrade(item1, item2));
-            }
-        }
+        Sort();
     }
 
-    /// <summary>
-    /// Intermediate step to simplify raw transactions and combine pairs
-    /// </summary>
-    /// <exception cref="NotImplementedException"></exception>
-    private (IReadOnlyList<RawTransaction> singles, IReadOnlyList<(RawTransaction, RawTransaction)> pairs) CombineTransactions(
-        IReadOnlyList<RawTransaction> transactions)
+    public ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher)
     {
-        var dict = new Dictionary<string, List<RawTransaction>>();
-        foreach (var transaction in transactions)
-        {
-            if (dict.ContainsKey(transaction.ReferenceId))
-            {
-                dict[transaction.ReferenceId].Add(transaction);
-            }
-            else
-            {
-                dict.Add(transaction.ReferenceId, new List<RawTransaction> { transaction });
-            }
-        }
+        var data = new TickerOrganizer(Transactions, year);
 
-        var singles = dict.Values.Where(v => v.Count == 1).Select(v => v.Single()).ToList();
-        var pairs = dict.Values.Where(v => v.Count == 2).ToList();
-
-        if (dict.Values.Any(v => v.Count > 2))
-        {
-            throw new NotImplementedException("Unrecognized transaction - has more than 2 events with same reference id");
-        }
-
-        return (singles, pairs.Select(p => (p[0], p[1])).ToList());
+        var transactions = data.AllByTickerWithStaking[ticker].Where(t => t.TradeDate.Year <= year).ToList();
+        var sales = SalesFactory.ProcessSalesAndStakingForYear(transactions, year, fetcher);
+        return sales;
     }
 
     /// <summary>
@@ -132,25 +55,16 @@ class KrakenLog : IEventLog
         var fiat = 'e';
         //var culture = CultureInfo.CurrentCulture;
         CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fi-FI");
+        var fetcher = new PriceFetcherWithPersistence();
 
+        var data = new TickerOrganizer(Transactions, year);
         // <ticker, ticker transactions>
-        var dict = new Dictionary<string, List<TransactionBase>>();
-        foreach (var transaction in GetBuySellTransactions().Where(t => t.TradeDate.Year <= year))
-        {
-            if (dict.ContainsKey(transaction.Ticker))
-            {
-                dict[transaction.Ticker].Add(transaction);
-            }
-            else
-            {
-                dict.Add(transaction.Ticker, new List<TransactionBase>() { transaction });
-            }
-        }
+        var dictAll = data.AllByTickerWithStaking;
 
         // <ticker, transactions report>
         var transactionReport = new Dictionary<string, string>();
 
-        foreach (var entry in dict)
+        foreach (var entry in dictAll)
         {
             var eventsBuilder = new StringBuilder();
             eventsBuilder.AppendLine($"Transactions summary");
@@ -175,17 +89,28 @@ class KrakenLog : IEventLog
         messageBuilder.AppendLine($"Tax report for sales in {year}");
         messageBuilder.AppendLine("Individual listing for each ticker:");
 
-        foreach (var ticker in dict.Keys)
+        foreach (var ticker in dictAll.Keys)
         {
             messageBuilder.AppendLine("--------------------");
             messageBuilder.AppendLine($"Ticker: {ticker}");
 
-            //
+            // Transactions summary
             messageBuilder.Append(transactionReport[ticker]);
 
-            //
+            // Staking summary
+            var salesCalculator = SalesFactory.ProcessSalesAndStakingForYear(dictAll[ticker], year, fetcher);
+            if (salesCalculator.Staking.HasEvents)
+            {
+                messageBuilder.AppendLine($"Staking recap");
+                messageBuilder.AppendLine($"{Separator}Staking rewards all time total: {salesCalculator.Staking.TotalDividends()}");
+                messageBuilder.AppendLine($"{Separator}Staking rewards moved to spot all time (taxable): {salesCalculator.Staking.TotalWithdrawals()}");
+                messageBuilder.AppendLine($"{Separator}Amount still in staking ({year}): WIP");
+                messageBuilder.AppendLine();
+            }
+
+            //Sales profit report
             messageBuilder.AppendLine($"Sales profit report");
-            var salesCalculator = SalesFactory.ProcessSalesForYear(dict[ticker], year);
+
             var profitSales = salesCalculator.PrintProfitSales().ToList();
             if (profitSales.Any())
             {
@@ -200,6 +125,7 @@ class KrakenLog : IEventLog
                 messageBuilder.AppendLine();
             }
 
+            // Sales loss report
             messageBuilder.AppendLine($"Sales loss report");
             var lossSales = salesCalculator.PrintLossSales().ToList();
             if (lossSales.Any())
@@ -277,7 +203,7 @@ class KrakenLog : IEventLog
 
     public List<int> TransactionYearSpan()
     {
-        var years = GetBuySellTransactions().Select(t => t.TradeDate.Year).Distinct().ToList();
+        var years = Transactions.Select(t => t.TradeDate.Year).Distinct().ToList();
         return years.OrderBy(y => y).ToList();
     }
 }

@@ -21,13 +21,27 @@
         {
             foreach (var singleSale in profitSales)
             {
-                var message =
-                    $"{singleSale.TradeDate:dd/MM/yyyy} " +
-                    $"sell price {PricePrettify(singleSale.SoldTotalPrice),-10}" +
-                    $"profit {PricePrettify(singleSale.ProfitLoss),-10}" +
-                    $"unit price {UnitPricePrettify(singleSale.SoldUnitPrice)}{_currencySymbol}    " +
-                    $"original unit price {UnitPricePrettify(singleSale.OriginalUnitPrice)}{_currencySymbol}";
-                yield return message;
+                if (singleSale.Type == SalesType.StakingWithdrawal)
+                {
+                    var assetAmount = $"{singleSale.AssetAmount:G8}";
+                    var message =
+                        $"{singleSale.TradeDate:dd/MM/yyyy} " +
+                        $"staking withdrawal (staking->spot)   " +
+                        $"amount: {assetAmount}   " +
+                        $"unit price on current date: {UnitPricePrettify(singleSale.SoldUnitPrice)}   " +
+                        $"fiat value on current date: {PricePrettify(singleSale.SoldTotalPrice),-10}";
+                    yield return message;
+                }
+                else
+                {
+                    var message =
+                        $"{singleSale.TradeDate:dd/MM/yyyy} " +
+                        $"sell price {PricePrettify(singleSale.SoldTotalPrice),-10}" +
+                        $"profit {PricePrettify(singleSale.ProfitLoss),-10}" +
+                        $"unit price {UnitPricePrettify(singleSale.SoldUnitPrice)}{_currencySymbol}    " +
+                        $"original unit price {UnitPricePrettify(singleSale.OriginalUnitPrice)}{_currencySymbol}";
+                    yield return message;
+                }
             }
         }
 

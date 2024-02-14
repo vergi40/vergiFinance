@@ -29,4 +29,8 @@
     <ProjectReference Include="..\vergiFinance\vergiFinance.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+
 </Project>

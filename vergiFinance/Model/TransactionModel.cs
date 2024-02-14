@@ -79,17 +79,47 @@
 
         public override string ToString()
         {
-            return $"{Type.ToString()}: {Ticker} -> {TotalPrice:F2} {FiatCurrency}";
+            return Type switch
+            {
+                TransactionType.Buy => $"{Type.ToString()}: {TotalPrice:F2} {FiatCurrency} -> {AssetAmount}{Ticker}",
+                TransactionType.Sell => $"{Type.ToString()}: {AssetAmount}{Ticker} -> {TotalPrice:F2} {FiatCurrency}",
+                TransactionType.WalletToStaking => $"{Type.ToString()}: {AssetAmount}{Ticker} wallet -> staking",
+                TransactionType.StakingToWallet => $"{Type.ToString()}: {AssetAmount}{Ticker} staking -> wallet",
+                TransactionType.StakingDividend => $"{Type.ToString()}: {TotalPrice:F2}{Ticker}",
+                _ => $"{Type.ToString()}: {Ticker} -> {TotalPrice:F2} {FiatCurrency}"
+            };
         }
 
         public string ToKrakenTransactionString(char fiatType = 'e')
         {
-            var totalPrice = $"{TotalPrice:F2}{fiatType}";
+            // Amount could depend on which coin? 
             var assetAmount = $"{AssetAmount:G8}";
-            var assetUnitPrice = $"{AssetUnitPrice:F2}";
-            if (AssetUnitPrice < 1) assetUnitPrice = $"{AssetUnitPrice:F4}";
-            var message = $"{TradeDate.Date:dd/MM/yyyy} {Type.ToString(),-5}{totalPrice,-10} amount {assetAmount,-11} unit price {assetUnitPrice}{fiatType}";
-            return message;
+            if(Type is TransactionType.Buy or TransactionType.Sell)
+            {
+                var totalPrice = $"{TotalPrice:F2}{fiatType}";
+                var assetUnitPrice = $"{AssetUnitPrice:F2}";
+                if (AssetUnitPrice < 1) assetUnitPrice = $"{AssetUnitPrice:F4}";
+                var message =
+                    $"{TradeDate.Date:dd/MM/yyyy} {Type.ToString(),-5}{totalPrice,-10} amount {assetAmount,-11} unit price {assetUnitPrice}{fiatType}";
+                if (Type is TransactionType.Sell) message += "   taxable";
+                return message;
+            }
+            else if (Type == TransactionType.WalletToStaking)
+            {
+                return $"{TradeDate.Date:dd/MM/yyyy} Spot->Staking   amount {assetAmount,-11}";
+            }
+            else if (Type == TransactionType.StakingToWallet)
+            {
+                return $"{TradeDate.Date:dd/MM/yyyy} Staking->Spot   amount {assetAmount,-11}   taxable";
+            }
+            else if (Type == TransactionType.StakingDividend)
+            {
+                return $"{TradeDate.Date:dd/MM/yyyy} Staking reward   amount {assetAmount,-11}";
+            }
+            else
+            {
+                return $"{TradeDate.Date:dd/MM/yyyy} {Type.ToString(),-16} amount {assetAmount,-11}";
+            }
         }
 
         public string ToKrakenDividendString(char fiatType = 'e')
