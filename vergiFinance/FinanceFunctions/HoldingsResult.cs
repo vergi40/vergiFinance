@@ -6,23 +6,16 @@ namespace vergiFinance.FinanceFunctions
     internal class AllHoldingsResult : IAllHoldingsResult
     {
         public IReadOnlyList<IHoldingsResult> AllHoldings { get; }
-        public IReadOnlyDictionary<string, List<IHoldingsResult>> AllHoldingsByTicker { get; }
+        public IReadOnlyDictionary<string, IHoldingsResult> AllHoldingsByTicker { get; }
 
         public AllHoldingsResult(List<IHoldingsResult> allHoldings)
         {
             AllHoldings = allHoldings;
 
-            var dict = new Dictionary<string, List<IHoldingsResult>>();
+            var dict = new Dictionary<string, IHoldingsResult>();
             foreach (var holding in allHoldings)
             {
-                if (dict.ContainsKey(holding.Ticker))
-                {
-                    dict[holding.Ticker].Add(holding);
-                }
-                else
-                {
-                    dict.Add(holding.Ticker, new List<IHoldingsResult>() { holding });
-                }
+                dict[holding.Ticker] = holding;
             }
             AllHoldingsByTicker = dict;
         }
@@ -33,7 +26,7 @@ namespace vergiFinance.FinanceFunctions
         public string Ticker { get; }
         public decimal AssetAmountInWallet { get; }
         public decimal AssetAmountStaked { get; }
-        public decimal AssetAmountTotal { get; }
+        public decimal AssetAmountTotal => AssetAmountInWallet + AssetAmountStaked;
 
         public HoldingsResult(string ticker, decimal assetAmount)
         {
@@ -41,12 +34,11 @@ namespace vergiFinance.FinanceFunctions
             AssetAmountInWallet = assetAmount;
         }
 
-        public HoldingsResult(string ticker, decimal assetAmountInWallet, decimal assetAmountStaked, decimal assetAmountTotal)
+        public HoldingsResult(string ticker, decimal assetAmountInWallet, decimal assetAmountStaked)
         {
             Ticker = ticker;
             AssetAmountInWallet = assetAmountInWallet;
             AssetAmountStaked = assetAmountStaked;
-            AssetAmountTotal = assetAmountTotal;
         }
     }
 }

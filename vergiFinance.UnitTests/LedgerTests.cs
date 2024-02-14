@@ -49,6 +49,22 @@ namespace vergiFinance.UnitTests
 
         }
 
+        [Test]
+        public void AaveSales_HoldingsShouldMatch()
+        {
+            var resFolder = Path.Combine(GetPath.ThisProject(), "Resources");
+            var csv = Get.ReadCsvFile(Path.Combine(resFolder, "aave.csv"));
+
+            var kraken = new KrakenBroker();
+            var events = kraken.ReadTransactions(csv.Lines);
+
+            var allHoldings = events.CalculateAllHoldings(new DateTime(2024, 1, 1));
+            var aave = allHoldings.AllHoldingsByTicker["AAVE"];
+            aave.AssetAmountInWallet.ShouldBe(4.4m, 0.001m);
+            aave.AssetAmountTotal.ShouldBe(4.4m, 0.001m);
+        }
+
+
         [Explicit("Not meant for unit testing")]
         [Test]
         public async Task FetchTickerPriceTest()

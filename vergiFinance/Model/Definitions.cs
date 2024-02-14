@@ -22,7 +22,7 @@ namespace vergiFinance.Model
     public interface IAllHoldingsResult
     {
         IReadOnlyList<IHoldingsResult> AllHoldings { get; }
-        IReadOnlyDictionary<string, List<IHoldingsResult>> AllHoldingsByTicker { get; }
+        IReadOnlyDictionary<string, IHoldingsResult> AllHoldingsByTicker { get; }
     }
 
     public interface IHoldingsResult
