@@ -9,7 +9,7 @@ namespace vergiFinance.FinanceFunctions
         /// Create sales calculator and process transactions for a year.
         /// After this the result can be used to fetch profits and prints
         /// </summary>
-        public static ISalesResult ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
+        public static (ISalesResult, IHoldingsResult) ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
         {
             var calculator = new SalesCalculator(year);
             var sales = calculator.CalculateCumulativeSales(allTransactionsForTicker);
@@ -19,7 +19,7 @@ namespace vergiFinance.FinanceFunctions
         /// <summary>
         /// Create sales calculator and process transactions and staking transfers for a year.
         /// </summary>
-        public static ISalesResult ProcessSalesAndStakingForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
+        public static (ISalesResult, IHoldingsResult) ProcessSalesAndStakingForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
         {
             var calculator = new SalesCalculator(year, fetcher);
             var sales = calculator.CalculateCumulativeSalesWithStaking(allTransactionsForTicker);
@@ -45,7 +45,8 @@ namespace vergiFinance.FinanceFunctions
         public bool ContainsStakingWithdrawals { get; private set; }
 
         public StakingInfo Staking { get; } = new();
-        
+        public IHoldingsResult? Holdings { get; private set; } = null;
+
         public SalesCalculator(int year)
         {
             _year = year;
@@ -85,7 +86,7 @@ namespace vergiFinance.FinanceFunctions
         /// Prerequisite: All transactions are same ticker. Types are filtered
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public ISalesResult CalculateCumulativeSalesWithStaking(List<TransactionBase> transactions)
+        public (ISalesResult, IHoldingsResult) CalculateCumulativeSalesWithStaking(List<TransactionBase> transactions)
         { 
             if (_fetcher == null) throw new InvalidOperationException("Logical error");
             _allSales.Clear();
@@ -210,16 +211,18 @@ namespace vergiFinance.FinanceFunctions
                 //}
             }
 
-            return new SalesResult(_allSales, _year, Staking);
+            Holdings = new HoldingsResult(Ticker, cryptoWallet.Amount, stakeWallet.Amount);
+            return (new SalesResult(_allSales, _year, Staking), Holdings);
         }
 
         /// <summary>
         /// Prerequisite: All transactions are same ticker. Only buy or sell types
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public ISalesResult CalculateCumulativeSales(List<TransactionBase> transactions)
+        public (ISalesResult, IHoldingsResult) CalculateCumulativeSales(List<TransactionBase> transactions)
         {
             _allSales.Clear();
+            if (transactions.Any()) Ticker = transactions[0].Ticker;
             // Examples
             // Buy 100 @5, 500
             // Buy 100 @10, 1000
@@ -229,14 +232,17 @@ namespace vergiFinance.FinanceFunctions
 
             var totalProfit = 0m;
             var buyHistory = new List<TransactionBase>();
+            var cryptoWallet = new Account();
             foreach (var transaction in GetBuySellTransactions(transactions))
             {
                 if (transaction.Type == TransactionType.Buy)
                 {
+                    cryptoWallet.Add(transaction.AssetAmount);
                     buyHistory.Add(transaction.DeepCopy());
                 }
                 else if (transaction.Type == TransactionType.Sell)
                 {
+                    cryptoWallet.Subtract(transaction.AssetAmount);
                     // Sold less than there exists in first buy
                     if (transaction.AssetAmount <= buyHistory.First().AssetAmount)
                     {
@@ -289,7 +295,8 @@ namespace vergiFinance.FinanceFunctions
                 }
             }
 
-            return new SalesResult(_allSales, _year);
+            Holdings = new HoldingsResult(Ticker, cryptoWallet.Amount);
+            return (new SalesResult(_allSales, _year), Holdings);
         }
     }
 

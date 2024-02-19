@@ -36,7 +36,7 @@ class KrakenLog : IEventLog
         Sort();
     }
 
-    public ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher)
+    public (ISalesResult, IHoldingsResult) CalculateSales(int year, string ticker, IPriceFetcher fetcher)
     {
         var data = new TickerOrganizer(Transactions, year);
 
@@ -97,8 +97,18 @@ class KrakenLog : IEventLog
             // Transactions summary
             messageBuilder.Append(transactionReport[ticker]);
 
+            var (salesCalculator, holding) = SalesFactory.ProcessSalesAndStakingForYear(dictAll[ticker], year, fetcher);
+
+            // Holdings
+            if (holding.AssetAmountTotal > 0.001m)
+            {
+                messageBuilder.AppendLine("Current holdings (WIP not entirely correct with all transaction types):");
+                messageBuilder.AppendLine($"{Separator}Wallet: {holding.AssetAmountInWallet}");
+                messageBuilder.AppendLine($"{Separator}Staked: {holding.AssetAmountStaked}");
+                messageBuilder.AppendLine();
+            }
+
             // Staking summary
-            var salesCalculator = SalesFactory.ProcessSalesAndStakingForYear(dictAll[ticker], year, fetcher);
             if (salesCalculator.Staking.HasEvents)
             {
                 messageBuilder.AppendLine($"Staking recap");

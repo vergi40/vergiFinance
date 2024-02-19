@@ -31,7 +31,7 @@ namespace vergiFinance.UnitTests
 
             var kraken = new KrakenBroker();
             var events = kraken.ReadTransactions(csv.Lines);
-            var sales = events.CalculateSales(2022, "TRX", _fetcher.Object);
+            var (sales, _) = events.CalculateSales(2022, "TRX", _fetcher.Object);
 
             var profitLoss = sales.TotalProfitLoss();
             profitLoss.ShouldBe(356.042m, 0.001m);
@@ -50,7 +50,33 @@ namespace vergiFinance.UnitTests
         }
 
         [Test]
+        public void TrxSalesWithStakingWithdrawals_HoldingsShouldMatch()
+        {
+            var resFolder = Path.Combine(GetPath.ThisProject(), "Resources");
+            var csv = Get.ReadCsvFile(Path.Combine(resFolder, "trx.csv"));
+
+            var kraken = new KrakenBroker();
+            var events = kraken.ReadTransactions(csv.Lines);
+            var (_, holdings) = events.CalculateSales(2022, "TRX", _fetcher.Object);
+
+            holdings.AssetAmountInWallet.ShouldBe(0.00000058m, 0.001m);
+        }
+
+        [Test]
         public void AaveSales_HoldingsShouldMatch()
+        {
+            var resFolder = Path.Combine(GetPath.ThisProject(), "Resources");
+            var csv = Get.ReadCsvFile(Path.Combine(resFolder, "aave.csv"));
+
+            var kraken = new KrakenBroker();
+            var events = kraken.ReadTransactions(csv.Lines);
+            var (_, holdings) = events.CalculateSales(2022, "AAVE", _fetcher.Object);
+
+            holdings.AssetAmountInWallet.ShouldBe(4.4m, 0.001m);
+        }
+
+        [Test]
+        public void AaveSales_HoldingsCalculator_HoldingsShouldMatch()
         {
             var resFolder = Path.Combine(GetPath.ThisProject(), "Resources");
             var csv = Get.ReadCsvFile(Path.Combine(resFolder, "aave.csv"));

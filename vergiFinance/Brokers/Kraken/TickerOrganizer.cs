@@ -5,13 +5,13 @@ namespace vergiFinance.Brokers.Kraken
 {
     internal class TickerOrganizer
     {
-        public new Dictionary<string, List<TransactionBase>> AllByTicker { get; } = new();
+        public Dictionary<string, List<TransactionBase>> AllByTicker { get; } = new();
 
         /// <summary>
-        /// E.g. TRX-named ticker will contain all TRX.S events
+        /// E.g. TRX-named ticker will contain all TRX.S events. No TRX.S entry in this case
         /// </summary>
-        public new Dictionary<string, List<TransactionBase>> AllByTickerWithStaking { get; } = new();
-        public new Dictionary<string, List<TransactionBase>> BuySellByTicker { get; } = new();
+        public Dictionary<string, List<TransactionBase>> AllByTickerWithStaking { get; } = new();
+        public Dictionary<string, List<TransactionBase>> BuySellByTicker { get; } = new();
 
         public TickerOrganizer(IReadOnlyList<TransactionBase> transactions, int year)
         {

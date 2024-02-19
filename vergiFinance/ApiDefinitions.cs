@@ -19,7 +19,7 @@ namespace vergiFinance
     {
         List<TransactionBase> Transactions { get; set; }
 
-        ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher);
+        (ISalesResult, IHoldingsResult) CalculateSales(int year, string ticker, IPriceFetcher fetcher);
 
         /// <summary>
         /// Single ticker holdings at given time
