@@ -28,12 +28,31 @@ class KrakenLog : IEventLog
     /// </summary>
     public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
 
+    /// <summary>
+    /// Call <see cref="Api.ReadKrakenTransactions"/> instead
+    /// </summary>
+    internal KrakenLog(){}
+
     public void ProcessRawTransactions(IReadOnlyList<RawTransaction> transactions)
     {
         var processer = new RawTransactionProcesser();
         Transactions = processer.ProcessRawTransactions(transactions);
 
         Sort();
+    }
+
+    public List<(ISalesResult, IHoldingsResult)> CalculateSales(int year, IPriceFetcher fetcher)
+    {
+        var data = new TickerOrganizer(Transactions, year);
+        var result = new List<(ISalesResult, IHoldingsResult)>();
+        foreach (var key in data.AllByTickerWithStaking.Keys)
+        {
+            var transactions = data.AllByTickerWithStaking[key].Where(t => t.TradeDate.Year <= year).ToList();
+            var (sales, holdings) = SalesFactory.ProcessSalesAndStakingForYear(transactions, year, fetcher);
+            result.Add((sales, holdings));
+        }
+
+        return result;
     }
 
     public (ISalesResult, IHoldingsResult) CalculateSales(int year, string ticker, IPriceFetcher fetcher)

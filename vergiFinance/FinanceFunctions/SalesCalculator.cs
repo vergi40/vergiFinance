@@ -94,7 +94,7 @@ namespace vergiFinance.FinanceFunctions
 
 
             var totalProfit = 0m;
-            var buyHistory = new List<TransactionBase>();
+            var buyHistoryFifo = new Queue<TransactionBase>();
 
             var fiat = new Account();
             var stakeWallet = new Account();
@@ -123,10 +123,12 @@ namespace vergiFinance.FinanceFunctions
 
                     // If single spot -> staking -> spot, will be negative
                     var cumulativeDividends = stakeWallet.Amount * -1;
-                    var currentPrice = _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate).Result;
+                    // TODO to async
+                    var currentPrice = Task.Run(() => 
+                        _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate)).GetAwaiter().GetResult();
 
                     // Creating "fake" buy event. Staking rewards are appreciated based on current rate
-                    buyHistory.Add(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker, 
+                    buyHistoryFifo.Enqueue(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker, 
                         cumulativeDividends, currentPrice, transaction.TradeDate));
 
                     var sale = new SalesUnitInformation(currentPrice, 0, cumulativeDividends, transaction);
@@ -140,7 +142,7 @@ namespace vergiFinance.FinanceFunctions
                     fiat.Subtract(transaction.TotalPrice);
                     cryptoWallet.Add(transaction.AssetAmount);
                     
-                    buyHistory.Add(transaction.DeepCopy());
+                    buyHistoryFifo.Enqueue(transaction.DeepCopy());
                 }
                 else if (transaction.Type == TransactionType.Sell)
                 {
@@ -149,9 +151,9 @@ namespace vergiFinance.FinanceFunctions
                     ContainsSellEvents = true;
                     
                     // Sold less than there exists in first buy
-                    if (transaction.AssetAmount <= buyHistory.First().AssetAmount)
+                    if (transaction.AssetAmount <= buyHistoryFifo.First().AssetAmount)
                     {
-                        var buy = buyHistory.First();
+                        var buy = buyHistoryFifo.First();
                         buy.AssetAmount -= transaction.AssetAmount;
                         var profit = (transaction.AssetUnitPrice - buy.AssetUnitPrice) * transaction.AssetAmount;
 
@@ -160,7 +162,7 @@ namespace vergiFinance.FinanceFunctions
                         _allSales.Add(sale);
 
                         totalProfit += profit;
-                        if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
+                        if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistoryFifo.Dequeue();
                     }
                     // Iterate buy list until asset amount is subtracted
                     else
@@ -169,13 +171,13 @@ namespace vergiFinance.FinanceFunctions
                         var counter = 0;
                         while (Math.Abs(assetAmount) >= 1e-6m)
                         {
-                            if (!buyHistory.Any())
+                            if (!buyHistoryFifo.Any())
                             {
                                 throw new ArgumentException($"Failed to calculate: there are more sell-units than buy-units. " +
                                                             $"Current transaction in iteration: {transaction}");
                             }
 
-                            var buy = buyHistory.First();
+                            var buy = buyHistoryFifo.First();
                             var maxReduce = Math.Min(Math.Abs(buy.AssetAmount), assetAmount);
 
                             assetAmount -= maxReduce;
@@ -187,7 +189,7 @@ namespace vergiFinance.FinanceFunctions
                             _allSales.Add(sale);
 
                             totalProfit += profit;
-                            if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
+                            if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistoryFifo.Dequeue();
 
                             counter++;
                             if (counter > 50)

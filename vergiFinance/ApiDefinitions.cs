@@ -19,6 +19,14 @@ namespace vergiFinance
     {
         List<TransactionBase> Transactions { get; set; }
 
+        /// <summary>
+        /// Calculate all sales from ledger
+        /// </summary>
+        List<(ISalesResult, IHoldingsResult)> CalculateSales(int year, IPriceFetcher fetcher);
+
+        /// <summary>
+        /// Calculate single ticker sales from ledger
+        /// </summary>
         (ISalesResult, IHoldingsResult) CalculateSales(int year, string ticker, IPriceFetcher fetcher);
 
         /// <summary>
