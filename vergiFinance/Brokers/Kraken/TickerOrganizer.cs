@@ -8,7 +8,8 @@ namespace vergiFinance.Brokers.Kraken
         public Dictionary<string, List<TransactionBase>> AllByTicker { get; } = new();
 
         /// <summary>
-        /// E.g. TRX-named ticker will contain all TRX.S events. No TRX.S entry in this case
+        /// E.g. TRX-named ticker will contain all TRX.S events. No TRX.S entry in this case.
+        /// Same with ethereum. ETH2 contains everything.
         /// </summary>
         public Dictionary<string, List<TransactionBase>> AllByTickerWithStaking { get; } = new();
         public Dictionary<string, List<TransactionBase>> BuySellByTicker { get; } = new();
@@ -46,6 +47,10 @@ namespace vergiFinance.Brokers.Kraken
                 {
                     // TODO ETH2 and other oddities handling
                     ticker = ticker.Substring(0, ticker.Length - 2);
+                }
+                else if (ticker is "ETH2" or "ETH2.S")
+                {
+                    ticker = "XETH";
                 }
                 if (AllByTickerWithStaking.ContainsKey(ticker))
                 {

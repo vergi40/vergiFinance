@@ -30,25 +30,30 @@ namespace vergiFinance.Model
         /// <summary>
         /// NOK, NVDA, ETH, 
         /// </summary>
-        public string Ticker { get; }
+        string Ticker { get; }
 
         /// <summary>
         /// Amount of units under control. Non-negative.
         /// Kpl määrä. Esim 8 kpl osakkeita. 0.001 kpl kryptoa
         /// </summary>
-        public decimal AssetAmountInWallet { get; }
+        decimal AssetAmountInWallet { get; }
 
         /// <summary>
-        /// Amount of units, locked in staking. Non-negative.
+        /// Amount of units, locked in staking. Staked + cumulative dividends. Non-negative.
         /// Kpl määrä. Esim 8 kpl osakkeita. 0.001 kpl kryptoa
         /// </summary>
-        public decimal AssetAmountStaked { get; }
+        decimal AssetAmountStaked { get; }
 
         /// <summary>
         /// Total amount of units. Non-negative.
         /// Kpl määrä. Esim 8 kpl osakkeita. 0.001 kpl kryptoa
         /// </summary>
-        public decimal AssetAmountTotal { get; }
+        decimal AssetAmountTotal { get; }
+
+        /// <summary>
+        /// Unit price for full <see cref="AssetAmountTotal"/>
+        /// </summary>
+        decimal AverageUnitPrice { get; }
     }
 
     public interface ITaxReportOperations

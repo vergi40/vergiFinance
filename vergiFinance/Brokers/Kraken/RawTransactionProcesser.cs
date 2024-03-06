@@ -24,17 +24,21 @@ namespace vergiFinance.Brokers.Kraken
             {
                 if (singleEvent.TypeAsString == "deposit")
                 {
-                    // Staking single operation "start"
-                    // Can be skipped as duplicate with "staking" event
+                    // Duplicate event to "staking" reward event. Can be skipped, if rules apply:
+                    // * Doesn't contain txid
+                    // * Type = "deposit"
+                    // * (optional) same amount as matching "staking" event
+
+                    // "","FTCSzfC-N9GEQc5BIU6rNED697D59N","2023-12-17 01:32:55","deposit","","currency","XETH",0.0001868805,0.0000280321,""
+                    // "LJVYMU-G7PLP-YQEUIG","ST7U3YD-5ZDUV-QKJZRH","2023-12-17 02:11:03","staking","","currency","XETH",0.0001868805,0.0000280321,0.9774000144
                     continue;
-                    //result.Add(TransactionFactory.Create(TransactionType.StakingOperation, FiatCurrency.Eur, singleEvent.Asset,
-                    //    Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
                 }
                 else if (singleEvent.TypeAsString == "staking")
                 {
                     // Staking single operation "finished"
-                    result.Add(TransactionFactory.Create(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
-                        Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
+                    // "staking"-side event also contains fee that is subtracted before reward is added to wallet
+                    result.Add(TransactionFactory.CreateWithFee(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
+                        Math.Abs(singleEvent.Amount), 1m, singleEvent.Time, singleEvent.Fee));
                 }
                 else
                 {

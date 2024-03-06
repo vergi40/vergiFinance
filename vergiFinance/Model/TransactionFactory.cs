@@ -28,6 +28,25 @@ namespace vergiFinance.Model
             return transaction;
         }
 
+        /// <summary>
+        /// Staking: fee is subtracted from asset amount
+        /// </summary>
+        public static TransactionBase CreateWithFee(TransactionType type, FiatCurrency currency, string ticker, 
+            decimal assetAmount, decimal pricePerUnit, DateTime time, decimal fee)
+        {
+            var transaction = new TransactionBase()
+            {
+                Type = type,
+                FiatCurrency = currency,
+                Ticker = ticker,
+                AssetAmount = assetAmount - fee,
+                AssetUnitPrice = pricePerUnit,
+                TradeDate = time,
+                Fee = fee
+            };
+            return transaction;
+        }
+
         public static TransactionBase CreateBuy(FiatCurrency currency, string ticker, decimal assetAmount, decimal pricePerUnit, DateTime time)
         {
             var transaction = new TransactionBase()

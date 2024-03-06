@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Moq;
+﻿using Moq;
 using Shouldly;
 using vergiCommon;
 using vergiFinance.Brokers;
@@ -20,12 +15,18 @@ namespace vergiFinance.UnitTests
         public void Setup()
         {
             _fetcher = new Mock<IPriceFetcher>();
-            _fetcher.Setup(f => f.GetCoinPriceForDate(It.IsAny<string>(), It.IsAny<DateTime>())).Returns(Task.FromResult(0.077m));
+        }
+
+        private void SetupCoinPrice(decimal price)
+        {
+            _fetcher.Setup(f => 
+                f.GetCoinPriceForDate(It.IsAny<string>(), It.IsAny<DateTime>())).Returns(Task.FromResult(price));
         }
 
         [Test]
         public void TrxSalesWithStakingWithdrawals_ShouldMatch()
         {
+            SetupCoinPrice(0.077m);
             var resFolder = Path.Combine(GetPath.ThisProject(), "Resources");
             var csv = Get.ReadCsvFile(Path.Combine(resFolder, "trx.csv"));
 
@@ -52,6 +53,7 @@ namespace vergiFinance.UnitTests
         [Test]
         public void TrxSalesWithStakingWithdrawals_HoldingsShouldMatch()
         {
+            SetupCoinPrice(0.077m);
             var resFolder = Path.Combine(GetPath.ThisProject(), "Resources");
             var csv = Get.ReadCsvFile(Path.Combine(resFolder, "trx.csv"));
 
@@ -60,6 +62,7 @@ namespace vergiFinance.UnitTests
             var (_, holdings) = events.CalculateSales(2022, "TRX", _fetcher.Object);
 
             holdings.AssetAmountInWallet.ShouldBe(0.00000058m, 0.001m);
+            holdings.AverageUnitPrice.ShouldBe(0.077m, 0.001m);
         }
 
         [Test]
@@ -73,6 +76,7 @@ namespace vergiFinance.UnitTests
             var (_, holdings) = events.CalculateSales(2022, "AAVE", _fetcher.Object);
 
             holdings.AssetAmountInWallet.ShouldBe(4.4m, 0.001m);
+            holdings.AverageUnitPrice.ShouldBe(165.94409090909090909090909091m, 0.000001m);
         }
 
         [Test]

@@ -27,6 +27,7 @@ namespace vergiFinance.FinanceFunctions
         public decimal AssetAmountInWallet { get; }
         public decimal AssetAmountStaked { get; }
         public decimal AssetAmountTotal => AssetAmountInWallet + AssetAmountStaked;
+        public decimal AverageUnitPrice { get; }
 
         public HoldingsResult(string ticker, decimal assetAmount)
         {
@@ -34,11 +35,12 @@ namespace vergiFinance.FinanceFunctions
             AssetAmountInWallet = assetAmount;
         }
 
-        public HoldingsResult(string ticker, decimal assetAmountInWallet, decimal assetAmountStaked)
+        public HoldingsResult(string ticker, decimal assetAmountInWallet, decimal assetAmountStaked, decimal averageUnitPrice)
         {
             Ticker = ticker;
             AssetAmountInWallet = assetAmountInWallet;
             AssetAmountStaked = assetAmountStaked;
+            AverageUnitPrice = averageUnitPrice;
         }
     }
 }
