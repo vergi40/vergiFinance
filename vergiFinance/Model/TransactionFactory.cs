@@ -1,4 +1,6 @@
-﻿using vergiFinance.Brokers.Kraken;
+﻿using System.Transactions;
+using vergiFinance.Brokers.Kraken;
+// ReSharper disable CommentTypo
 
 namespace vergiFinance.Model
 {
@@ -91,26 +93,34 @@ namespace vergiFinance.Model
 
             var fiatAmount = Math.Abs(fiat.Amount);
             var assetAmount = Math.Abs(crypto.Amount);
-            var pricePerUnit = Math.Abs(fiatAmount / assetAmount);
+
+            // FEES
+            // Veronalaisen tuloon kohdistuvat välittömät kustannukset voi vähentää vastaavasta veronalaisesta tulosta.
+            // Ledger amount = total amount spent/received, including fees
+            // Fee = what broker takes from amount
+            // Final balance = amount - fee
+            // Realistic average price = amount after fees
+            (decimal feeAsFiat, decimal feeAsCrypto) = FeeInTrade(fiat, crypto);
+            var pricePerUnit = Math.Abs((fiatAmount - feeAsFiat) / assetAmount);
 
             var transaction = Create(type, FiatCurrency.Eur, crypto.Asset, assetAmount, pricePerUnit, fiat.Time);
             transaction.Market = "KRAKEN";
+            
+            return transaction;
+        }
 
+        private static (decimal feeAsFiat, decimal feeAsCrypto) FeeInTrade(RawTransaction fiat, RawTransaction crypto)
+        {
             if (Math.Abs(fiat.Fee) > 0m)
             {
-                transaction.Fee = Math.Abs(fiat.Fee);
+                return (Math.Abs(fiat.Fee), 0m);
             }
             else if (Math.Abs(crypto.Fee) > 0m)
             {
-                // Fee logging depends if they are paid from crypto of from fiat
-                // Crypto fees are logged a bit weird. It should be added back to asset amount and that should be used to calculate fee in fiat
-                transaction.AssetAmount += Math.Abs(crypto.Fee);
-                transaction.AssetUnitPrice = Math.Abs(fiatAmount / transaction.AssetAmount);
-                transaction.Fee = transaction.AssetUnitPrice * Math.Abs(crypto.Fee);
+                return (0m, Math.Abs(crypto.Fee));
             }
 
-
-            return transaction;
+            return (0m,0m);
         }
 
         /// <summary>

@@ -96,29 +96,21 @@ namespace vergiFinance.FinanceFunctions
             var totalProfit = 0m;
             var buyHistoryFifo = new Queue<TransactionBase>();
 
-            var fiat = new Account();
+            var accounts = new KrakenAccounts();
             var avPrice = new AveragePrice();
-
-            // Amount moved from crypto to stake wallet. No dividends
-            var stakeWallet = new Account();
-            var stakeWithdrawalsEur = new Account();
-
-            // Staking "income", dividends only. Price calculated only after withdrawal
-            var stakeDividendsAsCrypto = new Account();
-            var cryptoWallet = new Account();
 
             foreach (var transaction in GetTransactionsForTaxCalculations(transactions))
             {
                 if (transaction.Type == TransactionType.StakingDividend)
                 {
-                    stakeDividendsAsCrypto.Add(transaction.AssetAmount);
+                    accounts.StakingDividends.Add(transaction.AssetAmount);
                     Staking.AddDividend(transaction);
                 }
                 else if (transaction.Type == TransactionType.WalletToStaking)
                 {
                     var amount = transaction.AssetAmount;
-                    cryptoWallet.Subtract(amount);
-                    stakeWallet.Add(amount);
+                    accounts.Crypto.Subtract(amount);
+                    accounts.Staking.Add(amount);
                 }
                 else if (transaction.Type == TransactionType.StakingToWallet)
                 {
@@ -129,26 +121,26 @@ namespace vergiFinance.FinanceFunctions
                     var withdrawalAmount = transaction.AssetAmount;
 
                     // Withdraw just a portion of invested, or invested + dividends?
-                    if (withdrawalAmount < stakeWallet.Amount)
+                    if (withdrawalAmount < accounts.Staking.Amount)
                     {
                         // Return part of the staked crypto to wallet
-                        stakeWallet.Subtract(withdrawalAmount);
-                        cryptoWallet.Add(withdrawalAmount);
+                        accounts.Staking.Subtract(withdrawalAmount);
+                        accounts.Crypto.Add(withdrawalAmount);
                     }
                     else
                     {
                         // Returning dividends also
-                        var originalStakedRemaining = stakeWallet.Amount;
+                        var originalStakedRemaining = accounts.Staking.Amount;
                         var dividendsAmount = withdrawalAmount - originalStakedRemaining;
 
                         // Stake wallet goes to zero
-                        stakeWallet.Subtract(originalStakedRemaining);
-                        cryptoWallet.Add(originalStakedRemaining);
+                        accounts.Staking.Subtract(originalStakedRemaining);
+                        accounts.Crypto.Add(originalStakedRemaining);
                         Staking.AddWithdrawal(transaction, transaction.AssetUnitPrice, originalStakedRemaining);
 
                         // "cash out" the dividends
-                        cryptoWallet.Add(dividendsAmount);
-                        stakeDividendsAsCrypto.Subtract(dividendsAmount);
+                        accounts.Crypto.Add(dividendsAmount);
+                        accounts.StakingDividends.Subtract(dividendsAmount);
 
                         // Calculate price for the dividends
                         // TODO to async
@@ -170,17 +162,17 @@ namespace vergiFinance.FinanceFunctions
                 }
                 else if (transaction.Type == TransactionType.Buy)
                 {
-                    fiat.Subtract(transaction.TotalPrice);
+                    accounts.Fiat.Subtract(transaction.TotalPrice);
                     avPrice.AddBuyEvent(transaction.AssetAmount, transaction.TotalPrice);
-                    cryptoWallet.Add(transaction.AssetAmount);
+                    accounts.Crypto.Add(transaction.AssetAmount);
                     
                     buyHistoryFifo.Enqueue(transaction.DeepCopy());
                 }
                 else if (transaction.Type == TransactionType.Sell)
                 {
-                    fiat.Add(transaction.TotalPrice);
+                    accounts.Fiat.Add(transaction.TotalPrice);
                     avPrice.AddSellEvent(transaction.AssetAmount);
-                    cryptoWallet.Subtract(transaction.AssetAmount);
+                    accounts.Crypto.Subtract(transaction.AssetAmount);
                     ContainsSellEvents = true;
                     
                     // Sold less than there exists in first buy
@@ -247,7 +239,11 @@ namespace vergiFinance.FinanceFunctions
             //}
 
             var walletAveragePrice = avPrice.GetAveragePrice();
-            Holdings = new HoldingsResult(Ticker, cryptoWallet.Amount, stakeWallet.Amount + stakeDividendsAsCrypto.Amount, walletAveragePrice);
+
+            Holdings = new HoldingsResult(Ticker, 
+                accounts.Crypto.Amount, 
+                accounts.Staking.Amount + accounts.StakingDividends.Amount, 
+                walletAveragePrice);
             return (new SalesResult(_allSales, _year, Staking), Holdings);
         }
 

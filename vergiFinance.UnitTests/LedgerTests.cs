@@ -35,7 +35,7 @@ namespace vergiFinance.UnitTests
             var (sales, _) = events.CalculateSales(2022, "TRX", _fetcher.Object);
 
             var profitLoss = sales.TotalProfitLoss();
-            profitLoss.ShouldBe(356.042m, 0.001m);
+            profitLoss.ShouldBe(355.11650004466000000000000015m, 0.00001m);
             //var report = events.PrintExtendedTaxReport(2022);
 
             // StakedFromSpot -> StakedToEarn 11,286.681715TRX, balance 0.00000058TRX
@@ -76,7 +76,7 @@ namespace vergiFinance.UnitTests
             var (_, holdings) = events.CalculateSales(2022, "AAVE", _fetcher.Object);
 
             holdings.AssetAmountInWallet.ShouldBe(4.4m, 0.001m);
-            holdings.AverageUnitPrice.ShouldBe(165.94409090909090909090909091m, 0.000001m);
+            holdings.AverageUnitPrice.ShouldBe(165.51263636363636363636363636m, 0.000001m);
         }
 
         [Test]
