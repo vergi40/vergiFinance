@@ -5,13 +5,16 @@
 		<ImplicitUsings>enable</ImplicitUsings>
     <Authors>Teemu Laine</Authors>
 		<Title>vergiCommon</Title>
-		<Version>0.2.2</Version>
+		<Version>0.3.0</Version>
 		<Authors>Teemu Laine</Authors>
     <ProductId>vergiCommon</ProductId>
 		<Description>Common utilities for personal projects. Mostly input-related, repetitive work that often occures in every prototype/hobby project.</Description>
 		<PackageTags>common;utilities;path;file</PackageTags>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 
     <!-- Generate documentation for public items. Ignore warnings related to them  -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -25,6 +28,10 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>vergiFinance.UnitTests</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LICENSE.txt" Pack="true" PackagePath="" />
+    <None Include="Readme.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

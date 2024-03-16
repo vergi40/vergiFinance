@@ -7,7 +7,7 @@ namespace vergiCommon.Internal.IFileInterface
 {
     internal class FileFactory
     {
-        public IFile Create(string filePath, bool trustFileExtension = true)
+        public async Task<IFile> CreateAsync(string filePath, bool trustFileExtension = true)
         {
             if (!System.IO.File.Exists(filePath))
             {
@@ -18,14 +18,14 @@ namespace vergiCommon.Internal.IFileInterface
             {
                 // https://github.com/AJMitev/FileTypeChecker
                 // Throws if unrecognizable
-                IsFileRecognizable(filePath);
+                FileRecognizableCheck(filePath);
             }
 
             // Compare extension to known types
             var validator = new ExtensionValidator();
             if (validator.IsTextFile(filePath))
             {
-                var data = System.IO.File.ReadAllLines(filePath);
+                var data = await System.IO.File.ReadAllLinesAsync(filePath);
 
                 // If text file
                 return new TextFile(filePath, data);
@@ -39,8 +39,10 @@ namespace vergiCommon.Internal.IFileInterface
             throw new NotImplementedException("File type reading not implemented yet");
         }
 
-        private bool IsFileRecognizable(string filePath)
+        private void FileRecognizableCheck(string filePath)
         {
+            // TODO first read everything async, then convert to stream for this.
+            // Now the file is read twice
             using (var fileStream = System.IO.File.OpenRead(filePath))
             {
                 var isRecognizable = FileTypeValidator.IsTypeRecognizable(fileStream);
@@ -52,10 +54,8 @@ namespace vergiCommon.Internal.IFileInterface
 
                 if (FileTypeValidator.IsImage(fileStream))
                 {
-                    throw new ArgumentException("Image types not supported");
+                    throw new NotImplementedException("Image types not supported");
                 }
-
-                return true;
             }
         }
 
@@ -82,7 +82,21 @@ namespace vergiCommon.Internal.IFileInterface
         /// </summary>
         public ICsvFile ReadCsvFile(string filePath)
         {
-            var file = Create(filePath, true);
+            var file = CreateAsync(filePath, true).GetAwaiter().GetResult();
+
+            if (file.Extension != "csv")
+                throw new ArgumentException($"Not valid csv file, file extension is: {file.Extension}");
+
+            var lines = file.Lines.Where(l => !string.IsNullOrEmpty(l)).ToList();
+            return CreateCsvFromTextFile(file);
+        }
+
+        /// <summary>
+        /// https://en.wikipedia.org/wiki/Comma-separated_values
+        /// </summary>
+        public async Task<ICsvFile> ReadCsvFileAsync(string filePath)
+        {
+            var file = await CreateAsync(filePath, true);
 
             if (file.Extension != "csv")
                 throw new ArgumentException($"Not valid csv file, file extension is: {file.Extension}");
@@ -114,7 +128,7 @@ namespace vergiCommon.Internal.IFileInterface
                 }
 
                 if (!sepCountList.Any()) continue;
-                var firstCount = sepCountList.First();
+                var firstCount = sepCountList[0];
                 if (sepCountList.Count == testLineAmount && sepCountList.All(c => c == firstCount))
                 {
                     // Found suitable separator. Same amount of separators exist on each test line

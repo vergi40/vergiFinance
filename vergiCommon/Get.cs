@@ -45,7 +45,23 @@ namespace vergiCommon
         {
             var fileFactory = new FileFactory();
 
-            return fileFactory.Create(filePath, trustFileExtension);
+            return fileFactory.CreateAsync(filePath, trustFileExtension).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Read file (text/image/binary). Return object has basic file properties.
+        /// Supports file validation.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="trustFileExtension">
+        /// Analyzes file content before fully reading that it's recognizable
+        /// </param>
+        /// <returns></returns>
+        public static async Task<IFile> ReadFileAsync(string filePath, bool trustFileExtension = true)
+        {
+            var fileFactory = new FileFactory();
+
+            return await fileFactory.CreateAsync(filePath, trustFileExtension);
         }
 
         /// <summary>
@@ -57,6 +73,17 @@ namespace vergiCommon
             var fileFactory = new FileFactory();
 
             return fileFactory.ReadCsvFile(filePath);
+        }
+
+        /// <summary>
+        /// Read comma-separated-values file. Provides simple data-instance where it should be
+        /// easy to utilize parsed data.
+        /// </summary>
+        public static async Task<ICsvFile> ReadCsvFileAsync(string filePath)
+        {
+            var fileFactory = new FileFactory();
+
+            return await fileFactory.ReadCsvFileAsync(filePath);
         }
 
         public static IFile ReadSingleFileFromZip(string zipPath)
