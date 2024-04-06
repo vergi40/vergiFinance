@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Text;
+using System.Xml;
 using FileTypeChecker;
 using vergiCommon.Internal.File;
 using vergiCommon.Public;
@@ -25,7 +26,9 @@ namespace vergiCommon.Internal.IFileInterface
             var validator = new ExtensionValidator();
             if (validator.IsTextFile(filePath))
             {
-                var data = await System.IO.File.ReadAllLinesAsync(filePath);
+                // TODO Check file encoding?
+                Encoding iso = Encoding.GetEncoding("ISO-8859-1");
+                var data = await System.IO.File.ReadAllLinesAsync(filePath, iso);
 
                 // If text file
                 return new TextFile(filePath, data);
