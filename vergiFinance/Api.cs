@@ -25,15 +25,30 @@ namespace vergiFinance
         /// <summary>
         /// Read bank transactions csv to structured list.
         /// Supported schemas:
-        /// * OP
+        /// * OP, S-pankki
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
         public static IReadOnlyList<IBankTransaction> ReadBankTransactions(string filePath)
         {
-            var factory = new OpTransactionFactory();
+            var factory = new BankTransactionFactory();
 
-            var transactions = factory.Create(filePath);
+            var transactions = factory.Create(filePath).GetAwaiter().GetResult();
+            return transactions;
+        }
+
+        /// <summary>
+        /// Read bank transactions csv to structured list.
+        /// Supported schemas:
+        /// * OP, S-pankki
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
+        public static async Task<IReadOnlyList<IBankTransaction>> ReadBankTransactionsAsync(string filePath)
+        {
+            var factory = new BankTransactionFactory();
+
+            var transactions = await factory.Create(filePath);
             return transactions;
         }
 
