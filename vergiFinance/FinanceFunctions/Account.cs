@@ -28,4 +28,20 @@ namespace vergiFinance.FinanceFunctions
             return $"Amount: {Amount:F2}, event count: {EventCount}";
         }
     }
+
+    internal class KrakenAccounts
+    {
+        public Account Fiat { get; } = new();
+        public Account Crypto { get; } = new();
+
+        /// <summary>
+        /// Amount moved from crypto to stake wallet. No dividends
+        /// </summary>
+        public Account Staking { get; } = new();
+
+        /// <summary>
+        /// Asset type = crypto
+        /// </summary>
+        public Account StakingDividends { get; } = new();
+    }
 }

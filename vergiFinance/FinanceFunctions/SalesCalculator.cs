@@ -9,7 +9,7 @@ namespace vergiFinance.FinanceFunctions
         /// Create sales calculator and process transactions for a year.
         /// After this the result can be used to fetch profits and prints
         /// </summary>
-        public static ISalesResult ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
+        public static (ISalesResult, IHoldingsResult) ProcessSalesForYear(List<TransactionBase> allTransactionsForTicker, int year)
         {
             var calculator = new SalesCalculator(year);
             var sales = calculator.CalculateCumulativeSales(allTransactionsForTicker);
@@ -19,7 +19,7 @@ namespace vergiFinance.FinanceFunctions
         /// <summary>
         /// Create sales calculator and process transactions and staking transfers for a year.
         /// </summary>
-        public static ISalesResult ProcessSalesAndStakingForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
+        public static (ISalesResult, IHoldingsResult) ProcessSalesAndStakingForYear(List<TransactionBase> allTransactionsForTicker, int year, IPriceFetcher fetcher)
         {
             var calculator = new SalesCalculator(year, fetcher);
             var sales = calculator.CalculateCumulativeSalesWithStaking(allTransactionsForTicker);
@@ -45,7 +45,8 @@ namespace vergiFinance.FinanceFunctions
         public bool ContainsStakingWithdrawals { get; private set; }
 
         public StakingInfo Staking { get; } = new();
-        
+        public IHoldingsResult? Holdings { get; private set; } = null;
+
         public SalesCalculator(int year)
         {
             _year = year;
@@ -85,7 +86,7 @@ namespace vergiFinance.FinanceFunctions
         /// Prerequisite: All transactions are same ticker. Types are filtered
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public ISalesResult CalculateCumulativeSalesWithStaking(List<TransactionBase> transactions)
+        public (ISalesResult, IHoldingsResult) CalculateCumulativeSalesWithStaking(List<TransactionBase> transactions)
         { 
             if (_fetcher == null) throw new InvalidOperationException("Logical error");
             _allSales.Clear();
@@ -93,64 +94,91 @@ namespace vergiFinance.FinanceFunctions
 
 
             var totalProfit = 0m;
-            var buyHistory = new List<TransactionBase>();
+            var buyHistoryFifo = new Queue<TransactionBase>();
 
-            var fiat = new Account();
-            var stakeWallet = new Account();
-            var stakeWithdrawalsEur = new Account();
-            var stakeDividendsAsCrypto = new Account();
-            var cryptoWallet = new Account();
+            var accounts = new KrakenAccounts();
+            var avPrice = new AveragePrice();
 
             foreach (var transaction in GetTransactionsForTaxCalculations(transactions))
             {
                 if (transaction.Type == TransactionType.StakingDividend)
                 {
-                    stakeDividendsAsCrypto.Add(transaction.AssetAmount);
+                    accounts.StakingDividends.Add(transaction.AssetAmount);
                     Staking.AddDividend(transaction);
                 }
                 else if (transaction.Type == TransactionType.WalletToStaking)
                 {
                     var amount = transaction.AssetAmount;
-                    cryptoWallet.Subtract(amount);
-                    stakeWallet.Add(amount);
+                    accounts.Crypto.Subtract(amount);
+                    accounts.Staking.Add(amount);
                 }
                 else if (transaction.Type == TransactionType.StakingToWallet)
                 {
-                    var amount = transaction.AssetAmount;
-                    cryptoWallet.Add(amount);
-                    stakeWallet.Subtract(amount);
+                    // NOTE: Accounting strategy is not FIFO now, but:
+                    // * First withdraw already owned, staked
+                    // * Lastly withdraw staking dividends
 
-                    // If single spot -> staking -> spot, will be negative
-                    var cumulativeDividends = stakeWallet.Amount * -1;
-                    var currentPrice = _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate).Result;
+                    var withdrawalAmount = transaction.AssetAmount;
 
-                    // Creating "fake" buy event. Staking rewards are appreciated based on current rate
-                    buyHistory.Add(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker, 
-                        cumulativeDividends, currentPrice, transaction.TradeDate));
+                    // Withdraw just a portion of invested, or invested + dividends?
+                    if (withdrawalAmount < accounts.Staking.Amount)
+                    {
+                        // Return part of the staked crypto to wallet
+                        accounts.Staking.Subtract(withdrawalAmount);
+                        accounts.Crypto.Add(withdrawalAmount);
+                    }
+                    else
+                    {
+                        // Returning dividends also
+                        var originalStakedRemaining = accounts.Staking.Amount;
+                        var dividendsAmount = withdrawalAmount - originalStakedRemaining;
 
-                    var sale = new SalesUnitInformation(currentPrice, 0, cumulativeDividends, transaction);
-                    _allSales.Add(sale);
-                    stakeWithdrawalsEur.Add(currentPrice * cumulativeDividends);
-                    ContainsStakingWithdrawals = true;
-                    Staking.AddWithdrawal(transaction, currentPrice, cumulativeDividends);
+                        // Stake wallet goes to zero
+                        accounts.Staking.Subtract(originalStakedRemaining);
+                        accounts.Crypto.Add(originalStakedRemaining);
+                        Staking.AddWithdrawal(transaction, transaction.AssetUnitPrice, originalStakedRemaining);
+
+                        // "cash out" the dividends
+                        accounts.Crypto.Add(dividendsAmount);
+                        accounts.StakingDividends.Subtract(dividendsAmount);
+
+                        // Calculate price for the dividends
+                        // TODO to async
+                        var dividendUnitPrice = Task.Run(() =>
+                            _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate)).GetAwaiter().GetResult();
+
+                        // Creating "fake" buy event. Staking rewards are appreciated based on current rate
+                        buyHistoryFifo.Enqueue(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker,
+                            dividendsAmount, dividendUnitPrice, transaction.TradeDate));
+                        avPrice.AddDividendEvent(dividendsAmount, dividendsAmount * dividendUnitPrice);
+
+                        var sale = new SalesUnitInformation(dividendUnitPrice, 0, dividendsAmount, transaction);
+                        _allSales.Add(sale);
+
+
+                        // TODO not sure, now setting only if withdrawing dividends
+                        ContainsStakingWithdrawals = true;
+                    }
                 }
                 else if (transaction.Type == TransactionType.Buy)
                 {
-                    fiat.Subtract(transaction.TotalPrice);
-                    cryptoWallet.Add(transaction.AssetAmount);
+                    accounts.Fiat.Subtract(transaction.TotalPrice);
+                    avPrice.AddBuyEvent(transaction.AssetAmount, transaction.TotalPrice);
+                    accounts.Crypto.Add(transaction.AssetAmount);
                     
-                    buyHistory.Add(transaction.DeepCopy());
+                    buyHistoryFifo.Enqueue(transaction.DeepCopy());
                 }
                 else if (transaction.Type == TransactionType.Sell)
                 {
-                    fiat.Add(transaction.TotalPrice);
-                    cryptoWallet.Subtract(transaction.AssetAmount);
+                    accounts.Fiat.Add(transaction.TotalPrice);
+                    avPrice.AddSellEvent(transaction.AssetAmount);
+                    accounts.Crypto.Subtract(transaction.AssetAmount);
                     ContainsSellEvents = true;
                     
                     // Sold less than there exists in first buy
-                    if (transaction.AssetAmount <= buyHistory.First().AssetAmount)
+                    if (transaction.AssetAmount <= buyHistoryFifo.First().AssetAmount)
                     {
-                        var buy = buyHistory.First();
+                        var buy = buyHistoryFifo.First();
                         buy.AssetAmount -= transaction.AssetAmount;
                         var profit = (transaction.AssetUnitPrice - buy.AssetUnitPrice) * transaction.AssetAmount;
 
@@ -159,7 +187,7 @@ namespace vergiFinance.FinanceFunctions
                         _allSales.Add(sale);
 
                         totalProfit += profit;
-                        if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
+                        if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistoryFifo.Dequeue();
                     }
                     // Iterate buy list until asset amount is subtracted
                     else
@@ -168,13 +196,13 @@ namespace vergiFinance.FinanceFunctions
                         var counter = 0;
                         while (Math.Abs(assetAmount) >= 1e-6m)
                         {
-                            if (!buyHistory.Any())
+                            if (!buyHistoryFifo.Any())
                             {
                                 throw new ArgumentException($"Failed to calculate: there are more sell-units than buy-units. " +
                                                             $"Current transaction in iteration: {transaction}");
                             }
 
-                            var buy = buyHistory.First();
+                            var buy = buyHistoryFifo.First();
                             var maxReduce = Math.Min(Math.Abs(buy.AssetAmount), assetAmount);
 
                             assetAmount -= maxReduce;
@@ -186,7 +214,7 @@ namespace vergiFinance.FinanceFunctions
                             _allSales.Add(sale);
 
                             totalProfit += profit;
-                            if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistory.RemoveAt(0);
+                            if (Math.Abs(buy.AssetAmount) < 1e-6m) buyHistoryFifo.Dequeue();
 
                             counter++;
                             if (counter > 50)
@@ -199,27 +227,34 @@ namespace vergiFinance.FinanceFunctions
                 }
             }
 
-            if (stakeWithdrawalsEur.Amount > 0)
-            {
-                // Assert that wallets match. totalProfit doesn't include staking income
-                var fiatProfit = fiat.Amount;
-                var debug = stakeWithdrawalsEur.Amount + totalProfit - fiatProfit;
-                //if (Math.Abs(stakeWithdrawalsEur.Amount + totalProfit - fiatProfit) > 0.1m)
-                //{
-                //    throw new InvalidOperationException("Data error");
-                //}
-            }
+            //if (stakeWithdrawalsEur.Amount > 0)
+            //{
+            //    // Assert that wallets match. totalProfit doesn't include staking income
+            //    var fiatProfit = fiat.Amount;
+            //    var debug = stakeWithdrawalsEur.Amount + totalProfit - fiatProfit;
+            //    //if (Math.Abs(stakeWithdrawalsEur.Amount + totalProfit - fiatProfit) > 0.1m)
+            //    //{
+            //    //    throw new InvalidOperationException("Data error");
+            //    //}
+            //}
 
-            return new SalesResult(_allSales, _year, Staking);
+            var walletAveragePrice = avPrice.GetAveragePrice();
+
+            Holdings = new HoldingsResult(Ticker, 
+                accounts.Crypto.Amount, 
+                accounts.Staking.Amount + accounts.StakingDividends.Amount, 
+                walletAveragePrice);
+            return (new SalesResult(_allSales, _year, Staking), Holdings);
         }
 
         /// <summary>
         /// Prerequisite: All transactions are same ticker. Only buy or sell types
         /// </summary>
         /// <exception cref="ArgumentException">Logical error in transaction content.</exception>
-        public ISalesResult CalculateCumulativeSales(List<TransactionBase> transactions)
+        public (ISalesResult, IHoldingsResult) CalculateCumulativeSales(List<TransactionBase> transactions)
         {
             _allSales.Clear();
+            if (transactions.Any()) Ticker = transactions[0].Ticker;
             // Examples
             // Buy 100 @5, 500
             // Buy 100 @10, 1000
@@ -229,14 +264,17 @@ namespace vergiFinance.FinanceFunctions
 
             var totalProfit = 0m;
             var buyHistory = new List<TransactionBase>();
+            var cryptoWallet = new Account();
             foreach (var transaction in GetBuySellTransactions(transactions))
             {
                 if (transaction.Type == TransactionType.Buy)
                 {
+                    cryptoWallet.Add(transaction.AssetAmount);
                     buyHistory.Add(transaction.DeepCopy());
                 }
                 else if (transaction.Type == TransactionType.Sell)
                 {
+                    cryptoWallet.Subtract(transaction.AssetAmount);
                     // Sold less than there exists in first buy
                     if (transaction.AssetAmount <= buyHistory.First().AssetAmount)
                     {
@@ -289,7 +327,8 @@ namespace vergiFinance.FinanceFunctions
                 }
             }
 
-            return new SalesResult(_allSales, _year);
+            Holdings = new HoldingsResult(Ticker, cryptoWallet.Amount);
+            return (new SalesResult(_allSales, _year), Holdings);
         }
     }
 

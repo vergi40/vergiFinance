@@ -29,7 +29,7 @@ namespace vergiFinance.UnitTests
             transactionList.Add(TransactionFactory.Create(TransactionType.Buy, FiatCurrency.Eur, "NOK", 100, 10, DateTime.Now));
             transactionList.Add(TransactionFactory.Create(TransactionType.Sell, FiatCurrency.Eur, "NOK", 50, 10, DateTime.Now));
             transactionList.Add(TransactionFactory.Create(TransactionType.Sell, FiatCurrency.Eur, "NOK", 100, 20, DateTime.Now));
-            var sales = SalesFactory.ProcessSalesForYear(transactionList, DateTime.Now.Year);
+            var (sales, _) = SalesFactory.ProcessSalesForYear(transactionList, DateTime.Now.Year);
             var result = sales.TotalProfitLoss();
 
             Assert.That(result, Is.EqualTo(1500m));
@@ -51,7 +51,7 @@ namespace vergiFinance.UnitTests
 
             Assert.Throws<ArgumentException>(() =>
             {
-                var sales = SalesFactory.ProcessSalesForYear(transactionList, DateTime.Now.Year);
+                var (sales, _) = SalesFactory.ProcessSalesForYear(transactionList, DateTime.Now.Year);
                 var result = sales.TotalProfitLoss();
             });
         }

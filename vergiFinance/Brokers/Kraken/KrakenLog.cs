@@ -28,6 +28,11 @@ class KrakenLog : IEventLog
     /// </summary>
     public List<TransactionBase> Transactions { get; set; } = new List<TransactionBase>();
 
+    /// <summary>
+    /// Call <see cref="Api.ReadKrakenTransactions"/> instead
+    /// </summary>
+    internal KrakenLog(){}
+
     public void ProcessRawTransactions(IReadOnlyList<RawTransaction> transactions)
     {
         var processer = new RawTransactionProcesser();
@@ -36,7 +41,21 @@ class KrakenLog : IEventLog
         Sort();
     }
 
-    public ISalesResult CalculateSales(int year, string ticker, IPriceFetcher fetcher)
+    public List<(ISalesResult, IHoldingsResult)> CalculateSales(int year, IPriceFetcher fetcher)
+    {
+        var data = new TickerOrganizer(Transactions, year);
+        var result = new List<(ISalesResult, IHoldingsResult)>();
+        foreach (var key in data.AllByTickerWithStaking.Keys)
+        {
+            var transactions = data.AllByTickerWithStaking[key].Where(t => t.TradeDate.Year <= year).ToList();
+            var (sales, holdings) = SalesFactory.ProcessSalesAndStakingForYear(transactions, year, fetcher);
+            result.Add((sales, holdings));
+        }
+
+        return result;
+    }
+
+    public (ISalesResult, IHoldingsResult) CalculateSales(int year, string ticker, IPriceFetcher fetcher)
     {
         var data = new TickerOrganizer(Transactions, year);
 
@@ -97,8 +116,18 @@ class KrakenLog : IEventLog
             // Transactions summary
             messageBuilder.Append(transactionReport[ticker]);
 
+            var (salesCalculator, holding) = SalesFactory.ProcessSalesAndStakingForYear(dictAll[ticker], year, fetcher);
+
+            // Holdings
+            if (holding.AssetAmountTotal > 0.001m)
+            {
+                messageBuilder.AppendLine("Current holdings (WIP not entirely correct with all transaction types):");
+                messageBuilder.AppendLine($"{Separator}Wallet: {holding.AssetAmountInWallet}");
+                messageBuilder.AppendLine($"{Separator}Staked: {holding.AssetAmountStaked}");
+                messageBuilder.AppendLine();
+            }
+
             // Staking summary
-            var salesCalculator = SalesFactory.ProcessSalesAndStakingForYear(dictAll[ticker], year, fetcher);
             if (salesCalculator.Staking.HasEvents)
             {
                 messageBuilder.AppendLine($"Staking recap");
@@ -206,4 +235,42 @@ class KrakenLog : IEventLog
         var years = Transactions.Select(t => t.TradeDate.Year).Distinct().ToList();
         return years.OrderBy(y => y).ToList();
     }
+
+    public IAllHoldingsResult CalculateAllHoldings(DateTime pointInTime)
+    {
+        var dataAll = new TickerOrganizer(Transactions, pointInTime);
+        var dictAll = dataAll.AllByTickerWithStaking;
+
+        var holdings = new List<IHoldingsResult>();
+        foreach (var key in dictAll.Keys)
+        {
+            var holding = CalculateHoldings(pointInTime, key);
+            holdings.Add(holding);
+        }
+
+        return new AllHoldingsResult(holdings);
+    }
+
+    public IHoldingsResult CalculateHoldings(DateTime pointInTime, string ticker)
+    {
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fi-FI");
+
+        var dataAll = new TickerOrganizer(Transactions, pointInTime);
+        var dictAll = dataAll.AllByTicker;
+
+        var calculator = new HoldingsCalculator();
+
+        // TODO more weird holdings like ETH
+        if (dictAll.ContainsKey($"{ticker}.S"))
+        {
+            var transactions = dictAll[ticker]
+                .Concat(dictAll[$"{ticker}.S"])
+                .OrderBy(t => t.TradeDate)
+                .ToList();
+            return calculator.CalculateHoldingsWithStaking( ticker, transactions);
+        }
+        return calculator.CalculateHoldings(ticker, dictAll[ticker]);
+    }
+
+    
 }
