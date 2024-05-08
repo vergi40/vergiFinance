@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
+using PublicHoliday;
 using vergiFinance.Brokers;
 using vergiFinance.Functions;
 using vergiFinance.Model;
@@ -134,6 +136,62 @@ namespace vergiFinance
             message.AppendLine($"Realistic (subtracting 1/12 for holiday): {sum - sum * (1 / (double)12):F2}e");
 
             return message.ToString();
+        }
+
+        public static void CalculateKelaDays(DateTime startDate, int workDays)
+        {
+            Console.WriteLine("--------");
+            CalculateKelaDays1(startDate, workDays);
+            Console.WriteLine();
+            CalculateKelaDaysExcludeHolidays(startDate, workDays);
+        }
+
+        public static void CalculateKelaDays1(DateTime startDate, int workDays)
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("FI-fi");
+            //var calendar = new FinlandPublicHoliday();
+
+            Console.WriteLine($"Laskuri: {workDays} ma-pe päivää eteenpäin. Laskee mukaan myös arkipyhät. Aloituspäivä: {startDate:d}");
+
+            var remaining = workDays;
+            var next = new DateTime(startDate.Year, startDate.Month, startDate.Day);
+            while (remaining > 0)
+            {
+                next = next.AddDays(1);
+                if (next.DayOfWeek != DayOfWeek.Saturday && next.DayOfWeek != DayOfWeek.Sunday)
+                {
+                    remaining--;
+                }
+            }
+
+            Console.WriteLine($"Ratkaisu: {next:d}, {next.DayOfWeek}");
+        }
+
+        public static void CalculateKelaDaysExcludeHolidays(DateTime startDate, int workDays)
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("FI-fi");
+            var calendar = new FinlandPublicHoliday(true);
+
+            Console.WriteLine($"Laskuri: {workDays} ma-pe päivää eteenpäin. Skippaa arkipyhät. Aloituspäivä: {startDate:d}");
+
+            var remaining = workDays;
+            var next = new DateTime(startDate.Year, startDate.Month, startDate.Day);
+            while (remaining > 0)
+            {
+                next = next.AddDays(1);
+                if (next.DayOfWeek != DayOfWeek.Saturday && next.DayOfWeek != DayOfWeek.Sunday)
+                {
+                    if (calendar.IsPublicHoliday(next))
+                    {
+                        Console.WriteLine($"  Skip {next:d}. Syy: {calendar.PublicHolidayNames(next.Year)[next]}");
+                        continue;
+                    }
+
+                    remaining--;
+                }
+            }
+
+            Console.WriteLine($"Ratkaisu: {next:d}, {next.DayOfWeek}");
         }
     }
 }

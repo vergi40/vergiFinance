@@ -123,6 +123,10 @@ namespace Terminal
                     var report = Api.GenerateSalesEstimateReport(year, hourly, length);
                     Write(report);
                 }),
+                ("Workday calc", () =>
+                {
+                    Api.CalculateKelaDays(new DateTime(2024, 4, 29), 500);
+                }),
                 ("DEBUG Read and print bank transactions", () =>
                 {
                     Write("Give input file path:");
