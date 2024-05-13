@@ -125,7 +125,7 @@ namespace Terminal
                 }),
                 ("Workday calc", () =>
                 {
-                    Api.CalculateKelaDays(new DateTime(2024, 4, 29), 500);
+                    Api.CalculateKelaDays(new DateTime(2024, 4, 15), 500);
                 }),
                 ("DEBUG Read and print bank transactions", () =>
                 {
