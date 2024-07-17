@@ -108,10 +108,11 @@ namespace vergiCommon.Internal.IFileInterface
             return CreateCsvFromTextFile(file);
         }
 
-        private static readonly IEnumerable<string> CsvSeparators = new List<string> { ";", ",", ":", "  ", "   " };
+        private static readonly IEnumerable<string> CsvSeparators = new List<string> { ";", ",", ":", "\t", "   ", "  " };
 
         internal ICsvFile CreateCsvFromTextFile(IFile textFile)
         {
+            // skip empty lines
             var lines = textFile.Lines.Where(l => !string.IsNullOrEmpty(l)).ToList();
             var testLineAmount = Math.Min(lines.Count, 10);
             var resultSeparator = "";
