@@ -1,7 +1,7 @@
 ﻿using System.Text;
+using vergiFinance.BankTransactions;
 using vergiFinance.Brokers;
 using vergiFinance.Functions;
-using vergiFinance.Model;
 
 namespace vergiFinance
 {
