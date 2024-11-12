@@ -10,17 +10,19 @@ namespace vergiFinance.Brokers.Kraken.Operations
     {
         /// <summary>
         /// HTTP Get single day price for given ticker.
-        /// https://www.coingecko.com/en/api
         /// </summary>
-        Task<decimal> GetCoinPriceForDate(string ticker, DateTime date);
+        /// <returns>Valid price for successful query. null for exception</returns>
+        Task<decimal?> GetCoinPriceForDate(string ticker, DateTime date);
     }
 
     public class PriceFetcher : IPriceFetcher
     {
-        private HttpClient _client { get; } = new HttpClient();
-        private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
+        private readonly IPriceFetcherHttpImplementation _fetcherImplementation;
 
-        private readonly CultureInfo _culture = CultureInfo.GetCultureInfo("fi-FI");
+        public PriceFetcher(IPriceFetcherHttpImplementation fetcherImplementation)
+        {
+            _fetcherImplementation = fetcherImplementation;
+        }
 
         /// <summary>
         /// NOTE: Not good design to update one property in mutable items. But for PoC it'll do
@@ -35,8 +37,8 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
                 try
                 {
-                    var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
-                    transaction.DayUnitPrice = priceAtDate;
+                    var priceAtDate = await _fetcherImplementation.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
+                    transaction.DayUnitPrice = priceAtDate ?? -9999m;
                 }
                 catch (HttpRequestException e)
                 {
@@ -50,63 +52,31 @@ namespace vergiFinance.Brokers.Kraken.Operations
             }
         }
 
-        public async Task<decimal> GetCoinPriceForDate(string ticker, DateTime date)
+        public async Task<decimal?> GetCoinPriceForDate(string ticker, DateTime date)
         {
-            var id = CoinGeckoConstants.TickerToId[ticker];
-
-            // https://api.coingecko.com/api/v3/coins/ethereum/history
-            var req = _urlBase + $"coins/{id}/history?date={date.Date:dd-MM-yyyy}";
-
-            var response = await _client.GetAsync(req);
-            response.EnsureSuccessStatusCode();
-            await Task.Delay(500);
-            return DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
-        }
-
-        public decimal DeserializeCoinMarketData(string jsonString)
-        {
-            // https://www.newtonsoft.com/json/help/html/SerializingJSONFragments.htm
-            var jObject = JObject.Parse(jsonString);
-
-            var marketData = jObject["market_data"];
-            var eurString = marketData["current_price"]["eur"].ToString();
-            // Gives decimal as 120,11 or 120.11
-            if(eurString.Contains('.')) return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
-            return Convert.ToDecimal(eurString, _culture);
-        }
-
-        public static List<CoinId> DeserializeCoinList(string jsonString)
-        {
-            var arrays = JArray.Parse(jsonString);
-
-            var result = new List<CoinId>();
-            foreach (var array in arrays)
+            try
             {
-                var coin = JsonConvert.DeserializeObject<CoinId>(array.ToString());
-                result.Add(coin);
+                var result = await _fetcherImplementation.GetCoinPriceForDate(ticker, date);
+                return result;
             }
-
-            var eth = result.FirstOrDefault(r => r.id.Equals("ethereum", StringComparison.InvariantCultureIgnoreCase));
-            var algo = result.FirstOrDefault(r => r.id.Equals("algorand", StringComparison.InvariantCultureIgnoreCase));
-
-            var eths = result.Where(r => r.name.Contains("ethereum", StringComparison.InvariantCultureIgnoreCase))
-                .ToList();
-
-            return result;
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
         }
     }
 
     public class PriceFetcherWithPersistence : IPriceFetcher
     {
-        private HttpClient _client { get; } = new HttpClient();
-        private string _urlBase { get; } = "https://api.coingecko.com/api/v3/";
+        private readonly IPriceFetcherHttpImplementation _fetcherImplementation;
         private readonly Persistence.Persistence _stakingPersistence;
 
-        private readonly CultureInfo _culture = CultureInfo.GetCultureInfo("fi-FI");
-
-        public PriceFetcherWithPersistence()
+        public PriceFetcherWithPersistence(IPriceFetcherHttpImplementation fetcherImplementation, 
+            Persistence.Persistence stakingPersistence)
         {
-            _stakingPersistence = new Persistence.Persistence(new DatabaseLite());
+            _fetcherImplementation = fetcherImplementation;
+            _stakingPersistence = stakingPersistence;
         }
 
         /// <summary>
@@ -131,8 +101,8 @@ namespace vergiFinance.Brokers.Kraken.Operations
 
                 try
                 {
-                    var priceAtDate = await GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
-                    transaction.DayUnitPrice = priceAtDate;
+                    var priceAtDate = await _fetcherImplementation.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate);
+                    transaction.DayUnitPrice = priceAtDate ?? -9999m;
                 }
                 catch (HttpRequestException e)
                 {
@@ -148,7 +118,7 @@ namespace vergiFinance.Brokers.Kraken.Operations
             }
         }
 
-        public async Task<decimal> GetCoinPriceForDate(string ticker, DateTime date)
+        public async Task<decimal?> GetCoinPriceForDate(string ticker, DateTime date)
         {
             // See if already persisted
             if (_stakingPersistence.TryLoadSingleStakingData(ticker, date.Date,
@@ -160,21 +130,12 @@ namespace vergiFinance.Brokers.Kraken.Operations
                 return dayUnitPrice;
             }
 
-            var id = CoinGeckoConstants.TickerToId[ticker];
-
-            // https://api.coingecko.com/api/v3/coins/ethereum/history
-            var req = _urlBase + $"coins/{id}/history?date={date.Date:dd-MM-yyyy}";
-
-            var response = await _client.GetAsync(req);
-            response.EnsureSuccessStatusCode();
-
-            
-            var unitPrice = DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
+            var unitPrice = await _fetcherImplementation.GetCoinPriceForDate(ticker, date);
             await Task.Delay(500);
 
             var dto = new StakingDto()
             {
-                DayUnitPrice = unitPrice,
+                DayUnitPrice = unitPrice ?? -9999m,
                 BrokerId = "",
                 Ticker = ticker,
                 TradeDate = date.Date
@@ -183,39 +144,7 @@ namespace vergiFinance.Brokers.Kraken.Operations
             _stakingPersistence.SaveSingleStakingData(dto);
             return unitPrice;
         }
-
-        public decimal DeserializeCoinMarketData(string jsonString)
-        {
-            // https://www.newtonsoft.com/json/help/html/SerializingJSONFragments.htm
-            var jObject = JObject.Parse(jsonString);
-
-            var marketData = jObject["market_data"];
-            var eurString = marketData["current_price"]["eur"].ToString();
-            // Gives decimal as 120,11 or 120.11
-            if (eurString.Contains('.')) return Convert.ToDecimal(eurString, CultureInfo.InvariantCulture);
-            return Convert.ToDecimal(eurString, _culture);
-        }
-
-        public static List<CoinId> DeserializeCoinList(string jsonString)
-        {
-            var arrays = JArray.Parse(jsonString);
-
-            var result = new List<CoinId>();
-            foreach (var array in arrays)
-            {
-                var coin = JsonConvert.DeserializeObject<CoinId>(array.ToString());
-                result.Add(coin);
-            }
-
-            var eth = result.FirstOrDefault(r => r.id.Equals("ethereum", StringComparison.InvariantCultureIgnoreCase));
-            var algo = result.FirstOrDefault(r => r.id.Equals("algorand", StringComparison.InvariantCultureIgnoreCase));
-
-            var eths = result.Where(r => r.name.Contains("ethereum", StringComparison.InvariantCultureIgnoreCase))
-                .ToList();
-
-            return result;
-        }
-
+        
         public void SaveUnitPrice(TransactionBase stakingRewardTransaction)
         {
             var dto = new StakingDto()

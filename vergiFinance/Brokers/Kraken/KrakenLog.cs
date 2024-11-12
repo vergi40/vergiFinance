@@ -3,6 +3,7 @@ using System.Text;
 using vergiFinance.Brokers.Kraken.Operations;
 using vergiFinance.FinanceFunctions;
 using vergiFinance.Model;
+using vergiFinance.Persistence;
 
 namespace vergiFinance.Brokers.Kraken;
 
@@ -74,7 +75,7 @@ class KrakenLog : IEventLog
         var fiat = 'e';
         //var culture = CultureInfo.CurrentCulture;
         CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fi-FI");
-        var fetcher = new PriceFetcherWithPersistence();
+        var fetcher = new PriceFetcherWithPersistence(new CoinGeckoPriceFetcher(), new Persistence.Persistence(new DatabaseLite()));
 
         var data = new TickerOrganizer(Transactions, year);
         // <ticker, ticker transactions>
@@ -210,7 +211,7 @@ class KrakenLog : IEventLog
     public string PrintStakingReport(int year)
     {
         var stakingRewards = Transactions.Where(t => t.Type == TransactionType.StakingDividend).ToList();
-        var priceFetcher = new PriceFetcher();
+        var priceFetcher = new PriceFetcher(new CoinGeckoPriceFetcher());
         priceFetcher.FillDayUnitPrice(stakingRewards).Wait();
 
         // Each transaction object now filled with proper day unit price
@@ -261,14 +262,14 @@ class KrakenLog : IEventLog
         var calculator = new HoldingsCalculator();
 
         // TODO more weird holdings like ETH
-        if (dictAll.ContainsKey($"{ticker}.S"))
-        {
-            var transactions = dictAll[ticker]
-                .Concat(dictAll[$"{ticker}.S"])
-                .OrderBy(t => t.TradeDate)
-                .ToList();
-            return calculator.CalculateHoldingsWithStaking( ticker, transactions);
-        }
+        //if (dictAll.ContainsKey($"{ticker}.S"))
+        //{
+        //    var transactions = dictAll[ticker]
+        //        .Concat(dictAll[$"{ticker}.S"])
+        //        .OrderBy(t => t.TradeDate)
+        //        .ToList();
+        //    return calculator.CalculateHoldingsWithStaking( ticker, transactions);
+        //}
         return calculator.CalculateHoldings(ticker, dictAll[ticker]);
     }
 

@@ -144,8 +144,16 @@ namespace vergiFinance.FinanceFunctions
 
                         // Calculate price for the dividends
                         // TODO to async
-                        var dividendUnitPrice = Task.Run(() =>
+                        var dividendUnitPriceNullable = Task.Run(() =>
                             _fetcher.GetCoinPriceForDate(transaction.Ticker, transaction.TradeDate)).GetAwaiter().GetResult();
+                        if (dividendUnitPriceNullable == null)
+                        {
+                            throw new InvalidOperationException(
+                                $"Didn't receive valid coin price for {transaction.Ticker} " +
+                                $"at date {transaction.TradeDate}");
+                        }
+
+                        var dividendUnitPrice = dividendUnitPriceNullable.Value;
 
                         // Creating "fake" buy event. Staking rewards are appreciated based on current rate
                         buyHistoryFifo.Enqueue(TransactionFactory.CreateBuy(FiatCurrency.Eur, transaction.Ticker,
