@@ -30,7 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Resources\" />
+    <None Update="Resources\CoinGecko\coinhistory.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

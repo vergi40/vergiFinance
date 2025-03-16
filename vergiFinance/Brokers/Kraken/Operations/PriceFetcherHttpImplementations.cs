@@ -40,7 +40,10 @@ namespace vergiFinance.Brokers.Kraken.Operations
             return DeserializeCoinMarketData(await response.Content.ReadAsStringAsync());
         }
 
-        private decimal DeserializeCoinMarketData(string jsonString)
+        /// <summary>
+        /// Deserialize CoinGecko full HTTP response content
+        /// </summary>
+        public decimal DeserializeCoinMarketData(string jsonString)
         {
             // https://www.newtonsoft.com/json/help/html/SerializingJSONFragments.htm
             var jObject = JObject.Parse(jsonString);

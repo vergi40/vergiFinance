@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Shouldly;
+using vergiFinance.BankTransactions;
 using vergiFinance.Model;
 
 namespace vergiFinance.UnitTests
