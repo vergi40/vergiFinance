@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-using vergiFinance.Brokers.Kraken;
-using vergiFinance.Persistence;
+﻿using vergiFinance.Brokers.Kraken;
 
 namespace vergiFinance.Brokers
 {
@@ -21,7 +16,7 @@ namespace vergiFinance.Brokers
                 }
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
-                var action = RawTransaction.Parse(line); 
+                var action = CsvToRawTransactionParser.Parse(line); 
                 transactions.Add(action);
             }
             return EventLogFactory.CreateKrakenLog(transactions);
