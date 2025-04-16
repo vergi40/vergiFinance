@@ -40,9 +40,15 @@ namespace vergiFinance.Brokers.Kraken
                     result.Add(TransactionFactory.CreateWithFee(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
                         Math.Abs(singleEvent.Amount), 1m, singleEvent.Time, singleEvent.Fee));
                 }
+                else if (singleEvent.TypeAsString == "withdrawal")
+                {
+                    // TODO
+                    result.Add(TransactionFactory.Create(TransactionType.Withdrawal, FiatCurrency.Eur, "",
+                        Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
+                }
                 else
                 {
-                    throw new NotImplementedException($"Type {singleEvent.TypeAsString} transaction not implemented");
+                    throw new NotImplementedException($"Type [{singleEvent.TypeAsString}] transaction not implemented");
                 }
             }
 
