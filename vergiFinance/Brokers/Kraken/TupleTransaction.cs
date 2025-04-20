@@ -44,6 +44,10 @@ internal class TupleTransaction
             {
                 IsTrade = true;
             }
+            else if (transactionType is "earn")
+            {
+                // TODO
+            }
             else
             {
                 throw new NotImplementedException($"Type {transactionType} not implemented");
