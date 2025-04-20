@@ -36,6 +36,8 @@ namespace vergiFinance.Brokers.Kraken
                 }
                 else if (singleEvent.TypeAsString == "staking")
                 {
+                    // TODO skip now
+                    continue;
                     // Staking single operation "finished"
                     // "staking"-side event also contains fee that is subtracted before reward is added to wallet
                     result.Add(TransactionFactory.CreateWithFee(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
@@ -48,6 +50,8 @@ namespace vergiFinance.Brokers.Kraken
                 }
                 else if (singleEvent.TypeAsString == "transfer")
                 {
+                    // TODO skip now
+                    continue;
                     if (singleEvent.SubType == "spottostaking" || singleEvent.SubType == "stakingfromspot")
                     {
                         result.Add(TransactionFactory.CreateStakingTransfer(TransactionType.WalletToStaking, true, 
@@ -62,6 +66,11 @@ namespace vergiFinance.Brokers.Kraken
                     {
                         throw new NotImplementedException($"Type [{singleEvent.TypeAsString}] transaction not implemented");
                     }
+                }
+                else if (singleEvent.TypeAsString == "earn")
+                {
+                    // TODO skip now
+                    continue;
                 }
                 else
                 {
@@ -91,6 +100,8 @@ namespace vergiFinance.Brokers.Kraken
                 {
                     if (info.WithdrawalCount == 1)
                     {
+                        // TODO skip now
+                        continue;
                         result.Add(TransactionFactory.CreateStakingTransfer(info.StakeTransferType, true, item1, item2));
                     }
                     else if (info.DepositCount == 1)
