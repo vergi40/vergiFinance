@@ -118,5 +118,16 @@ namespace vergiFinance.UnitTests
 
             //result.ShouldBe(0.077m, 0.001m);
         }
+
+        [Explicit("Not meant for unit testing")]
+        [Test]
+        public async Task TempRead2025Schema()
+        {
+            var resFolder = GetPath.MyDocumentsSubFolder("TempFinance");
+            var csv = Get.ReadCsvFile(Path.Combine(resFolder, "2020-2024-ledgers.csv"));
+
+            var kraken = new KrakenBroker();
+            var events = kraken.ReadTransactions(csv.Lines);
+        }
     }
 }

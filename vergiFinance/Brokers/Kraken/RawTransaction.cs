@@ -42,6 +42,8 @@ public class RawTransaction
     /// </summary>
     public decimal Fee { get; set; }
 
+    public string DebugOriginalCsvLine { get; init; }
+
     public override string ToString()
     {
         var info = $"Asset: {Asset}, transaction: {TypeAsString}, amount: {Amount}, fee: {Fee}";
@@ -89,6 +91,7 @@ public static class CsvToRawTransactionParser
             Amount = amount,
             Fee = fee,
             Balance = balance,
+            DebugOriginalCsvLine = line
         };
 
         return result;

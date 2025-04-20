@@ -1,4 +1,5 @@
-﻿using vergiFinance.Model;
+﻿using System.Transactions;
+using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken
 {
@@ -42,9 +43,25 @@ namespace vergiFinance.Brokers.Kraken
                 }
                 else if (singleEvent.TypeAsString == "withdrawal")
                 {
-                    // TODO
                     result.Add(TransactionFactory.Create(TransactionType.Withdrawal, FiatCurrency.Eur, "",
                         Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
+                }
+                else if (singleEvent.TypeAsString == "transfer")
+                {
+                    if (singleEvent.SubType == "spottostaking" || singleEvent.SubType == "stakingfromspot")
+                    {
+                        result.Add(TransactionFactory.CreateStakingTransfer(TransactionType.WalletToStaking, true, 
+                            singleEvent, singleEvent));
+                    }
+                    else if (singleEvent.SubType == "stakingtospot" || singleEvent.SubType == "spotfromstaking")
+                    {
+                        result.Add(TransactionFactory.CreateStakingTransfer(TransactionType.StakingToWallet, true, 
+                            singleEvent, singleEvent));
+                    }
+                    else
+                    {
+                        throw new NotImplementedException($"Type [{singleEvent.TypeAsString}] transaction not implemented");
+                    }
                 }
                 else
                 {
