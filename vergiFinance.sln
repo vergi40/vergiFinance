@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "vergiCommon", "vergiCommon\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vergiFinance.UnitTests", "vergiFinance.UnitTests\vergiFinance.UnitTests.csproj", "{BE3581D1-F937-41BD-84F0-7FD3E94AAA46}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsUtils", "CsUtils\CsUtils.csproj", "{DDC0AEE4-F464-4BD4-A2CF-2D5F2E762CCB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{BE3581D1-F937-41BD-84F0-7FD3E94AAA46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE3581D1-F937-41BD-84F0-7FD3E94AAA46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE3581D1-F937-41BD-84F0-7FD3E94AAA46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DDC0AEE4-F464-4BD4-A2CF-2D5F2E762CCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DDC0AEE4-F464-4BD4-A2CF-2D5F2E762CCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DDC0AEE4-F464-4BD4-A2CF-2D5F2E762CCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DDC0AEE4-F464-4BD4-A2CF-2D5F2E762CCB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
