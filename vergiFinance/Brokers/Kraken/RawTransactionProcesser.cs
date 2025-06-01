@@ -1,4 +1,5 @@
-﻿using vergiFinance.Model;
+﻿using System.Transactions;
+using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken
 {
@@ -35,14 +36,45 @@ namespace vergiFinance.Brokers.Kraken
                 }
                 else if (singleEvent.TypeAsString == "staking")
                 {
+                    // TODO skip now
+                    continue;
                     // Staking single operation "finished"
                     // "staking"-side event also contains fee that is subtracted before reward is added to wallet
                     result.Add(TransactionFactory.CreateWithFee(TransactionType.StakingDividend, FiatCurrency.Eur, singleEvent.Asset,
                         Math.Abs(singleEvent.Amount), 1m, singleEvent.Time, singleEvent.Fee));
                 }
+                else if (singleEvent.TypeAsString == "withdrawal")
+                {
+                    result.Add(TransactionFactory.Create(TransactionType.Withdrawal, FiatCurrency.Eur, "",
+                        Math.Abs(singleEvent.Amount), 1m, singleEvent.Time));
+                }
+                else if (singleEvent.TypeAsString == "transfer")
+                {
+                    // TODO skip now
+                    continue;
+                    if (singleEvent.SubType == "spottostaking" || singleEvent.SubType == "stakingfromspot")
+                    {
+                        result.Add(TransactionFactory.CreateStakingTransfer(TransactionType.WalletToStaking, true, 
+                            singleEvent, singleEvent));
+                    }
+                    else if (singleEvent.SubType == "stakingtospot" || singleEvent.SubType == "spotfromstaking")
+                    {
+                        result.Add(TransactionFactory.CreateStakingTransfer(TransactionType.StakingToWallet, true, 
+                            singleEvent, singleEvent));
+                    }
+                    else
+                    {
+                        throw new NotImplementedException($"Type [{singleEvent.TypeAsString}] transaction not implemented");
+                    }
+                }
+                else if (singleEvent.TypeAsString == "earn")
+                {
+                    // TODO skip now
+                    continue;
+                }
                 else
                 {
-                    throw new NotImplementedException($"Type {singleEvent.TypeAsString} transaction not implemented");
+                    throw new NotImplementedException($"Type [{singleEvent.TypeAsString}] transaction not implemented");
                 }
             }
 
@@ -68,6 +100,8 @@ namespace vergiFinance.Brokers.Kraken
                 {
                     if (info.WithdrawalCount == 1)
                     {
+                        // TODO skip now
+                        continue;
                         result.Add(TransactionFactory.CreateStakingTransfer(info.StakeTransferType, true, item1, item2));
                     }
                     else if (info.DepositCount == 1)

@@ -178,6 +178,12 @@ namespace vergiFinance.FinanceFunctions
                 }
                 else if (transaction.Type == TransactionType.Sell)
                 {
+                    if (transaction.Ticker.Contains("TRX"))
+                    {
+                        // TODO
+                        continue;
+                    }
+
                     accounts.Fiat.Add(transaction.TotalPrice);
                     avPrice.AddSellEvent(transaction.AssetAmount);
                     accounts.Crypto.Subtract(transaction.AssetAmount);
