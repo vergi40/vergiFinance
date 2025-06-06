@@ -1,6 +1,8 @@
-﻿namespace CsUtils;
+﻿using CsUtils.Models;
 
-public class SlnParser
+namespace CsUtils;
+
+internal class SlnParser
 {
     private readonly string _slnFilePath;
 
@@ -27,7 +29,7 @@ public class SlnParser
         return true;
     }
 
-    public string Parse()
+    public IReadOnlyList<ProjectInfo> Parse()
     {
         if (!File.Exists(_slnFilePath))
         {
@@ -58,10 +60,16 @@ public class SlnParser
         foreach (var (name, relativePath) in projectListing)
         {
             var fullPath = Path.Combine(directory, relativePath);
+            if (!File.Exists(fullPath))
+            {
+                // Sub-directory etc
+                continue;
+            }
+
             infos.Add(new ProjectInfo(name, relativePath, fullPath));
         }
 
-        return string.Join("\n", infos);
+        return infos;
     }
 
     private static List<ProjectNameAndPath> ParseProjects(List<string> lines)
@@ -85,5 +93,4 @@ public class SlnParser
     }
 
     private sealed record ProjectNameAndPath(string Name, string Path);
-    private sealed record ProjectInfo(string Name, string RelativePath, string FullPath);
 }
