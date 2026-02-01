@@ -1,4 +1,5 @@
-﻿using System.Transactions;
+﻿using System.Text;
+using System.Transactions;
 using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken
@@ -116,6 +117,7 @@ namespace vergiFinance.Brokers.Kraken
                     // "id1b","id2","2021-03-09 08:03:59","trade","","currency","TRX",11286.68171558,0.00000000,11286.68171558
                     result.Add(TransactionFactory.CreateKrakenTrade(item1, item2));
                 }
+                // TODO else. Earn etc
             }
             return result;
         }
@@ -143,12 +145,49 @@ namespace vergiFinance.Brokers.Kraken
             var singles = dict.Values.Where(v => v.Count == 1).Select(v => v.Single()).ToList();
             var pairs = dict.Values.Where(v => v.Count == 2).ToList();
 
-            if (dict.Values.Any(v => v.Count > 2))
-            {
-                throw new NotImplementedException("Unrecognized transaction - has more than 2 events with same reference id");
-            }
+            var multis = dict.Values.Where(v => v.Count > 2).ToList();
+            var multisAsPairs = CombineMultiTransactions(multis);
+            pairs.AddRange(multisAsPairs);
 
             return (singles, pairs.Select(p => (p[0], p[1])).ToList());
+        }
+
+        private List<List<RawTransaction>> CombineMultiTransactions(List<List<RawTransaction>> multis)
+        {
+            // 2025
+            // "txid","refid","time","type","subtype","aclass","subclass","asset","wallet","amount","fee","balance"
+            // "tid1","rid1","2025-07-12 09:55:49","earn","autoallocation","currency","crypto","ADA","spot / main",-0.02186300,0,0.00000000
+            // "tid2","rid1","2025-07-12 09:55:49","earn","autoallocation","currency","crypto","ADA","earn / liquid",0.02186300,0,0.02186300
+            // "tid3","rid1","2025-07-12 09:55:49","earn","autoallocation","currency","crypto","XTZ","spot / main",-0.01464600,0,0.00000000
+            // "tid4","rid1","2025-07-12 09:55:49","earn","autoallocation","currency","crypto","XTZ","earn / liquid",0.01464600,0,0.01464600
+            var pairs = new List<List<RawTransaction>>();
+
+            foreach (var multi in multis)
+            {
+                // All with same refid
+                var assetTypes = multi.Select(m => m.Asset).Distinct();
+
+                foreach (var asset in assetTypes)
+                {
+                    var debug = new StringBuilder();
+                    debug.AppendLine($"Reference id: {multi[0].ReferenceId}, asset: {asset}");
+                    var newPair = multi.Where(m => m.Asset == asset).ToList();
+
+                    if (newPair.Count != 2)
+                    {
+                        foreach (var item in newPair)
+                        {
+                            debug.AppendLine($"  Event: {item}");
+                        }
+                        throw new NotImplementedException($"Unrecognized multi-transaction with same refid - have more than 2 events with same asset: \n" +
+                                                          $"{debug}");
+                    }
+
+                    pairs.Add(newPair);
+                }
+            }
+
+            return pairs;
         }
     }
 }

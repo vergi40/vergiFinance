@@ -46,7 +46,11 @@ internal class TupleTransaction
             }
             else if (transactionType is "earn")
             {
-                // TODO
+                // TODO something staking related
+            }
+            else if (transactionType is "autoallocation")
+            {
+                // TODO something staking related
             }
             else
             {

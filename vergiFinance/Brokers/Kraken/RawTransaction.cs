@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using vergiFinance.Model;
+﻿using vergiFinance.Model;
 
 namespace vergiFinance.Brokers.Kraken;
 
@@ -48,86 +47,5 @@ public class RawTransaction
     {
         var info = $"Asset: {Asset}, transaction: {TypeAsString}, amount: {Amount}, fee: {Fee}";
         return info;
-    }
-}
-
-/// <summary>
-/// Convert Kraken csv line to RawTransaction
-/// </summary>
-public static class CsvToRawTransactionParser
-{
-    public static RawTransaction Parse(string line)
-    {
-        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-        line = line.Replace("\"", "");
-        var columns = line.Split(",");
-
-        // Pre-2025 "txid","refid","time","type","subtype","aclass","asset","amount","fee","balance"
-        // 2025     "txid","refid","time","type","subtype","aclass","asset","wallet","amount","fee","balance"
-
-        if (columns.Length == 10)
-        {
-            return ParsePre2025(line);
-        }
-
-        if (!DateTime.TryParse(columns[2], out var dateTime))
-        {
-            throw new ArgumentException($"Failed to parse datetime {columns[2]}");
-        }
-        decimal.TryParse(columns[8], out var amount);
-        decimal.TryParse(columns[9], out var fee);
-        decimal.TryParse(columns[10], out var balance);
-
-        var result = new RawTransaction()
-        {
-            Id = columns[0],
-            ReferenceId = columns[1],
-            Time = dateTime,
-            TypeAsString = columns[3],
-            SubType = columns[4],
-            AssetClass = columns[5],
-            Asset = columns[6],
-            Amount = amount,
-            Fee = fee,
-            Balance = balance,
-            DebugOriginalCsvLine = line
-        };
-
-        return result;
-    }
-
-    private static RawTransaction ParsePre2025(string line)
-    {
-        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-        line = line.Replace("\"", "");
-        var columns = line.Split(",");
-
-        // Pre-2025 "txid","refid","time","type","subtype","aclass","asset","amount","fee","balance"
-        // 2025     "txid","refid","time","type","subtype","aclass","asset","wallet","amount","fee","balance"
-        if (!DateTime.TryParse(columns[2], out var dateTime))
-        {
-            throw new ArgumentException($"Failed to parse datetime {columns[2]}");
-        }
-        decimal.TryParse(columns[7], out var amount);
-        decimal.TryParse(columns[8], out var fee);
-        decimal.TryParse(columns[9], out var balance);
-
-        var result = new RawTransaction()
-        {
-            Id = columns[0],
-            ReferenceId = columns[1],
-            Time = dateTime,
-            TypeAsString = columns[3],
-            SubType = columns[4],
-            AssetClass = columns[5],
-            Asset = columns[6],
-            Amount = amount,
-            Fee = fee,
-            Balance = balance,
-        };
-
-        return result;
     }
 }
