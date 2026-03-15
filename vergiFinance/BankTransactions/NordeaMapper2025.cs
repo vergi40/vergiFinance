@@ -1,15 +1,14 @@
-﻿using vergiFinance.FinanceFunctions;
-using vergiFinance.Model;
+﻿using vergiFinance.Model;
 
 namespace vergiFinance.BankTransactions;
 
-/// <summary>
-/// 2023, 2024
-/// </summary>
-internal class NordeaMapper : BankCsvMapper
+internal class NordeaMapper2025 : BankCsvMapper
 {
+    /// <summary>
+    /// Very similar to previous, new column "Viesti"
+    /// </summary>
     public const string Header =
-        "Kirjauspäivä;Määrä;Maksaja;Maksunsaaja;Nimi;Otsikko;Viitenumero";
+        "Kirjauspäivä;Määrä;Maksaja;Maksunsaaja;Nimi;Otsikko;Viesti;Viitenumero";
     public static IReadOnlyList<string> HeaderList => Header.Split(";");
 
     public override IBankTransaction MapRowToInstance(IReadOnlyList<string> row)
@@ -24,8 +23,9 @@ internal class NordeaMapper : BankCsvMapper
             Recipient = recipient,
             RecordDate = DateTime.Parse(row[0], _format),
             PaymentDate = DateTime.Parse(row[0], _format),
-            
-            Reference = row[6],
+
+            Message = row[6],
+            Reference = row[7],
         };
         return transaction;
     }

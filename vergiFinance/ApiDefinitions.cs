@@ -83,7 +83,8 @@ namespace vergiFinance
         string RecordType { get; }
 
         /// <summary>
-        /// Saaja / Maksaja. Money receiver or money sender
+        /// Saaja / Maksaja. External money receiver or money sender.
+        /// Negative amount = money receiver. Positive amount = money sender. 
         /// </summary>
         string Recipient { get; }
 

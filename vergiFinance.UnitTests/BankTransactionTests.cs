@@ -7,30 +7,81 @@ using System.Threading.Tasks;
 using Shouldly;
 using vergiFinance.BankTransactions;
 using vergiFinance.Model;
+// ReSharper disable StringLiteralTypo
 
 namespace vergiFinance.UnitTests
 {
     [TestFixture]
     internal class BankTransactionTests
     {
-        private OpTransactionFactory _factory;
+        private BankTransactionFactory _transactionFactory;
 
         [SetUp]
         public void Setup()
         {
             CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
-            _factory = new OpTransactionFactory();
+            _transactionFactory = new BankTransactionFactory();
         }
 
         [Test]
-        public void Test()
+        public void SolveMapper_Nordea2025()
         {
-            var rows = "02.09.2022;02.09.2022;-46,63;700;TILISIIRTO;aaa;FI00 0000 DABAFIHH;00000; ;1234"
-                .Split(";").ToList();
+            var header = "Kirjauspäivä;Määrä;Maksaja;Maksunsaaja;Nimi;Otsikko;Viesti;Viitenumero;Saldo;Valuutta;";
+            var list = header.Split(";").ToList();
+            var result = _transactionFactory.SolveMapper(list);
 
-            var result = _factory.MapRowToInstance(rows);
-            result.Amount.ShouldBe(-46.63m);
-            result.PaymentDate.ShouldBe(new DateTime(2022, 9, 2));
+            result.ShouldBeOfType<NordeaMapper2025>();
+        }
+
+        [Test]
+        public void SolveMapper_Nordea2024()
+        {
+            var header = "Kirjauspäivä;Määrä;Maksaja;Maksunsaaja;Nimi;Otsikko;Viitenumero;Saldo;Valuutta;";
+            var list = header.Split(";").ToList();
+            var result = _transactionFactory.SolveMapper(list);
+
+            result.ShouldBeOfType<NordeaMapper>();
+        }
+
+        [Test]
+        public void SolveMapper_Nordea2023()
+        {
+            var header = "Kirjauspäivä;Määrä;Maksaja;Maksunsaaja;Nimi;Otsikko;Viitenumero;Valuutta;";
+            var list = header.Split(";").ToList();
+            var result = _transactionFactory.SolveMapper(list);
+
+            result.ShouldBeOfType<NordeaMapper>();
+        }
+
+        [Test]
+        public void SolveMapper_OpBusiness2026()
+        {
+            var header = "Kirjauspäivä;Arvopäivä;Määrä EUROA;Laji;Selitys;Saaja/Maksaja;Saajan tilinumero ja pankin BIC;Viite;Viesti;Arkistointitunnus";
+            var list = header.Split(";").ToList();
+            var result = _transactionFactory.SolveMapper(list);
+
+            result.ShouldBeOfType<OpMapper>();
+        }
+
+        [Test]
+        public void SolveMapper_Op2025_Raw()
+        {
+            var header = "\"Kirjauspäivä\";\"Arvopäivä\";\"Määrä EUROA\";\"Laji\";\"Selitys\";\"Saaja/Maksaja\";" +
+                         "\"Saajan tilinumero\";\"Saajan pankin BIC\";\"Viite\";\"Viesti\";\"Arkistointitunnus\"";
+            var list = header.Split(";").ToList();
+            var result = _transactionFactory.SolveMapper(list);
+
+            result.ShouldBeOfType<OpPersonalMapper>();
+        }
+
+        [Test]
+        public void SolveMapper_Op2025_NoQuotes()
+        {
+            var header = "Kirjauspäivä;Arvopäivä;Määrä EUROA;Laji;Selitys;Saaja/Maksaja;Saajan tilinumero;Saajan pankin BIC;Viite;Viesti;Arkistointitunnus";
+            var list = header.Split(";").ToList();
+            var result = _transactionFactory.SolveMapper(list);
+
+            result.ShouldBeOfType<OpPersonalMapper>();
         }
     }
 }
